@@ -12,6 +12,11 @@ public class Company {
     }
 
     @Override
+    public int hashCode() {
+        return m_name.hashCode();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof Company)) {
             return false;
