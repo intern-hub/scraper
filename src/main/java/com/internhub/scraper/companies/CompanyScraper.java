@@ -14,6 +14,7 @@ import net.dean.jraw.references.SubredditReference;
 import net.dean.jraw.tree.CommentNode;
 import net.dean.jraw.tree.RootCommentNode;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -55,8 +56,16 @@ public class CompanyScraper {
     private String verifyOnGoogle(String potentialCompany) {
         // Perform one Google search for "[COMPANY] careers website" and get first link
         // Perform another Google search for "[COMPANY] internship apply" and get first link
-        List<URL> websiteSearch = m_google.search(potentialCompany + " careers website", 1);
-        List<URL> internSearch = m_google.search(potentialCompany + " internship apply", 1);
+        List<URL> websiteSearch;
+        List<URL> internSearch;
+        try {
+            websiteSearch = m_google.search(potentialCompany + " careers website", 1);
+            internSearch = m_google.search(potentialCompany + " internship apply", 1);
+        }
+        catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+
         if (websiteSearch.isEmpty() || internSearch.isEmpty()) {
             return null;
         }
