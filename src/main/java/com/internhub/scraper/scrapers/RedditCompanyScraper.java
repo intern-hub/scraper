@@ -17,7 +17,7 @@ import net.dean.jraw.tree.RootCommentNode;
 
 import java.util.*;
 
-public class CompanyRedditScraper implements Scraper<Company> {
+public class RedditCompanyScraper implements Scraper<Company> {
     private static final String REDDIT_CLIENT_ID = "WlcJSnReHivl-Q";
     private static final String REDDIT_CLIENT_SECRET = "ohxqq8KaDWMlAsWHPm-u-lOCDUw";
     private static final String REDDIT_COMPANY_LABEL = "Company/Industry: ";
@@ -25,7 +25,7 @@ public class CompanyRedditScraper implements Scraper<Company> {
     private RedditClient m_reddit;
     private CompanyVerifier m_verifier;
 
-    public CompanyRedditScraper() {
+    public RedditCompanyScraper() {
         // Set up tools for scraping
         UserAgent userAgent = new UserAgent("bot", "com.internhub.scraper", "1.0.0", "dmhacker");
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
