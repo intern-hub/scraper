@@ -1,4 +1,4 @@
-package com.internhub.scraper.googlesearch;
+package com.internhub.scraper.search;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Searcher {
+public class GoogleSearch {
     private static final String SEARCH_URL =
             "https://www.google.com/search?hl=en&q=%s&num=%d&btnG=Google+Search&tbs=0&safe=off&tbm=";
     private static final String USER_AGENT =
@@ -24,7 +24,7 @@ public class Searcher {
 
     private Random random;
 
-    public Searcher() {
+    public GoogleSearch() {
         this.random = new Random();
     }
 
