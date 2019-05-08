@@ -1,4 +1,4 @@
-package com.internhub.scraper.companies;
+package com.internhub.scraper.models;
 
 public class Company {
     private String m_name;

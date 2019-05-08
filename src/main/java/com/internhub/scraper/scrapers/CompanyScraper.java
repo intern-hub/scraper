@@ -1,5 +1,6 @@
-package com.internhub.scraper.companies;
+package com.internhub.scraper.scrapers;
 
+import com.internhub.scraper.models.Company;
 import com.internhub.scraper.search.GoogleSearch;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
