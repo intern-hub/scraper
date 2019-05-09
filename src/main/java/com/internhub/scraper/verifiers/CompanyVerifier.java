@@ -96,6 +96,7 @@ public class CompanyVerifier {
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
                 websiteRoot.contains("quantstart.com") ||
+                websiteRoot.contains("careershift.com") ||
                 websiteRoot.contains("indeed.com")) {
             m_search_cache.put(companyName, null);
             return null;

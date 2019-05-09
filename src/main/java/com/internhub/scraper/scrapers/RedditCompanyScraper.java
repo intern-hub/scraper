@@ -109,7 +109,14 @@ public class RedditCompanyScraper implements CompanyScraper {
                     company.setName(companyName);
                     company.setWebsite(companyWebsite.toString());
                     m_unique_results.put(companyWebsite, company);
-                    System.out.println("Identified new company (" + companyName + ", " + companyWebsite + ").");
+                    if (existing == null) {
+                        System.out.println("Identified new company (" + companyName +
+                                ", " + companyWebsite + ").");
+                    }
+                    else{
+                        System.out.println("Updating company (" + existing.getName() +
+                                " => " + companyName + ", " + companyWebsite + ").");
+                    }
                 }
                 else {
                     System.out.println("Company already verified: " + companyName + " => " + existing.getName());
