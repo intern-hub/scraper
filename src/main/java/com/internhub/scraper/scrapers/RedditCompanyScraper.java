@@ -15,6 +15,7 @@ import net.dean.jraw.references.SubmissionReference;
 import net.dean.jraw.references.SubredditReference;
 import net.dean.jraw.tree.CommentNode;
 import net.dean.jraw.tree.RootCommentNode;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import java.net.URL;
 import java.util.*;
@@ -103,8 +104,12 @@ public class RedditCompanyScraper implements CompanyScraper {
                 // Use the company's website to prune out duplicates
                 URL companyWebsite = m_verifier.getCompanyWebsite(companyName);
                 Company existing = m_unique_results.get(companyWebsite);
-                // We always settle for the company with the longest name
-                if (existing == null || companyName.length() > existing.getName().length()) {
+                // We always settle for the company name that minimizes edit
+                // distance between it and the domain of the careers website
+                LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
+                if (existing == null ||
+                        editDistance.apply(companyName, companyWebsite.getHost()) <
+                                editDistance.apply(existing.getName(), companyWebsite.getHost())) {
                     Company company = new Company();
                     company.setName(companyName);
                     company.setWebsite(companyWebsite.toString());
