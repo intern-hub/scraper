@@ -91,7 +91,7 @@ public class CompanyVerifier {
         //  Make sure both links aren't from generic websites or job listings
         // (e.g. the companies must have their own careers website)
         String websiteRoot = careersWebsite.getHost();
-        if (websiteRoot.contains("wikipedia.org") ||
+        if (websiteRoot.contains(".org") ||
                 websiteRoot.contains("glassdoor.com") ||
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
