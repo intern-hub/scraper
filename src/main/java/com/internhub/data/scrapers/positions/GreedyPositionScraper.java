@@ -3,11 +3,14 @@ package com.internhub.data.scrapers.positions;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.search.GoogleSearch;
+import com.internhub.data.verifiers.PositionVerifier;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
@@ -17,12 +20,13 @@ import java.net.URL;
 import java.util.*;
 
 public class GreedyPositionScraper implements PositionScraper {
-    private static int MAX_DEPTH = 4;
-    private static int MAX_ENTRY_LINKS = 5;
-    private static int MAX_TOTAL_LINKS = 100;
+    private static final int MAX_DEPTH = 4;
+    private static final int MAX_ENTRY_LINKS = 5;
+    private static final int MAX_TOTAL_LINKS = 100;
 
     private WebDriver m_driver;
     private GoogleSearch m_google;
+    private PositionVerifier m_verifier;
 
     public GreedyPositionScraper() {
         ChromeOptions options = new ChromeOptions();
@@ -35,6 +39,7 @@ public class GreedyPositionScraper implements PositionScraper {
         );
         this.m_driver = new ChromeDriver(options);
         this.m_google = new GoogleSearch();
+        this.m_verifier = new PositionVerifier();
     }
 
     @Override
@@ -116,13 +121,49 @@ public class GreedyPositionScraper implements PositionScraper {
             Document document = Jsoup.parse(pageSource);
             Elements body = fixHTMLBody(document.select("body"));
 
-            // TODO: Check if body is a valid application
-            // TODO: Switch to iframes and repeat the process with those
+            // Convert iframes to JSoup HTML elements
+            List<WebElement> iframes = m_driver.findElements(By.tagName("iframe"));
+            List<Elements> iframeBodies = new ArrayList<>();
+            for (WebElement iframe : iframes) {
+                m_driver.switchTo().frame(iframe);
+                Document iframeHTML = Jsoup.parse(m_driver.getPageSource());
+                Elements iframeBody = fixHTMLBody(iframeHTML.select("body"));
+                iframeBodies.add(iframeBody);
+            }
+
+            Elements verified = null;
+            if (m_verifier.isPositionValid(currentLink, body)) {
+                // In many cases, we will just be able to verify the
+                // application from the initial page
+                verified = body;
+            }
+            else {
+                // Otherwise, we check the iframes of the page to make sure
+                // we didn't miss a nested application view
+                for (Elements iframeBody : iframeBodies) {
+                    if (m_verifier.isPositionValid(currentLink, iframeBody)) {
+                        verified = iframeBody;
+                        break;
+                    }
+                }
+            }
+            if (verified != null) {
+                // If the link was able to be verified, then the verifier will have
+                // data regarding the link (e.g position title, etc.)
+                Position position = new Position();
+                position.setLink(currentLink);
+                position.setCompany(company);
+                position.setTitle(m_verifier.getPositionTitle(currentLink));
+                results.add(position);
+            }
 
             if (candidate.getDepth() < MAX_DEPTH) {
+                // Collect links from all page bodies including those of iframes
                 List<Elements> anchorBundles = new ArrayList<>();
                 anchorBundles.add(body.select("a[href]"));
-                // TODO: Collect links for iframes as well
+                for (Elements iframeBody : iframeBodies) {
+                    anchorBundles.add(iframeBody.select("a[href]"));
+                }
 
                 for (Elements anchors : anchorBundles) {
                     for (Element anchor : anchors) {

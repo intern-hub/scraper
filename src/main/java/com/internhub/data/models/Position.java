@@ -14,6 +14,8 @@ public class Position {
     @ManyToOne
     @JoinColumn(name = "companyId")
     private Company company;
+    @Column(name = "title")
+    private String title;
 
     public Position() {}
 
@@ -39,5 +41,13 @@ public class Position {
 
     public void setCompany(Company company) {
         this.company = company;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }
