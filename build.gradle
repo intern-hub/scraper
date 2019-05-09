@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group 'com.internhub.scraper'
+group 'com.internhub.data'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
@@ -24,6 +24,6 @@ dependencies {
 }
 
 application {
-    mainClassName = 'com.internhub.scraper.Main'
+    mainClassName = 'com.internhub.data.Main'
 }
 

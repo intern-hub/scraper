@@ -1,4 +1,4 @@
-package com.internhub.scraper.models;
+package com.internhub.data.models;
 
 import javax.persistence.*;
 

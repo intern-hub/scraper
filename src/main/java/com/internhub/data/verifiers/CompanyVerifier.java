@@ -1,6 +1,6 @@
-package com.internhub.scraper.verifiers;
+package com.internhub.data.verifiers;
 
-import com.internhub.scraper.search.GoogleSearch;
+import com.internhub.data.search.GoogleSearch;
 
 import java.io.IOException;
 import java.net.URL;
@@ -77,7 +77,9 @@ public class CompanyVerifier {
         URL internWebsite = internSearch.get(0);
         String truncatedName = companyName
                 .toLowerCase()
-                .replace(" ", "");
+                .replace(" ", "")
+                .replace(".", "")
+                .replace("&", "");
         if (!careersWebsite.getHost().contains(truncatedName) ||
                 !internWebsite.getHost().contains(truncatedName)) {
             // If this fails, it is still possible that the company
@@ -92,11 +94,12 @@ public class CompanyVerifier {
         // (e.g. the companies must have their own careers website)
         String websiteRoot = careersWebsite.getHost();
         if (websiteRoot.contains(".org") ||
+                websiteRoot.contains("quantstart.com") ||
+                websiteRoot.contains("careershift.com") ||
+                websiteRoot.contains("financesonline.com") ||
                 websiteRoot.contains("glassdoor.com") ||
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
-                websiteRoot.contains("quantstart.com") ||
-                websiteRoot.contains("careershift.com") ||
                 websiteRoot.contains("indeed.com")) {
             m_search_cache.put(companyName, null);
             return null;

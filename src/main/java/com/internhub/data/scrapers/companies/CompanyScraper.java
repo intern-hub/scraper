@@ -1,6 +1,6 @@
-package com.internhub.scraper.scrapers;
+package com.internhub.data.scrapers.companies;
 
-import com.internhub.scraper.models.Company;
+import com.internhub.data.models.Company;
 
 import java.util.List;
 

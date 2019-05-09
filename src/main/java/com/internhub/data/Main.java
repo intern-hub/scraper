@@ -1,7 +1,7 @@
-package com.internhub.scraper;
+package com.internhub.data;
 
-import com.internhub.scraper.models.Company;
-import com.internhub.scraper.scrapers.RedditCompanyScraper;
+import com.internhub.data.models.Company;
+import com.internhub.data.scrapers.companies.RedditCompanyScraper;
 
 public class Main {
     public static void main(String[] args) {

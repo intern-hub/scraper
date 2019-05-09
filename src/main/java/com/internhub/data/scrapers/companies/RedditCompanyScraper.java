@@ -1,7 +1,7 @@
-package com.internhub.scraper.scrapers;
+package com.internhub.data.scrapers.companies;
 
-import com.internhub.scraper.models.Company;
-import com.internhub.scraper.verifiers.CompanyVerifier;
+import com.internhub.data.models.Company;
+import com.internhub.data.verifiers.CompanyVerifier;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
 import net.dean.jraw.http.OkHttpNetworkAdapter;
@@ -30,15 +30,11 @@ public class RedditCompanyScraper implements CompanyScraper {
     private CompanyVerifier m_verifier;
 
     public RedditCompanyScraper() {
-        this.m_unique_results = new HashMap<>();
-
-        // Set up tools for scraping
-        UserAgent userAgent = new UserAgent("bot", "com.internhub.scraper", "1.0.0", "dmhacker");
+        UserAgent userAgent = new UserAgent("bot", "com.internhub.data", "1.0.0", "dmhacker");
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
-
-        // Set up tools for verification
         this.m_verifier = new CompanyVerifier();
+        this.m_unique_results = new HashMap<>();
     }
 
     @Override
@@ -97,7 +93,7 @@ public class RedditCompanyScraper implements CompanyScraper {
             }
             String companyName = commentClean.substring(beginIndex, endIndex).trim();
 
-            // TODO: Add proper logging to this section
+            // TODO: Replace println calls with proper logging
 
             // Use our verification utilities to make sure we have a valid company
             if (m_verifier.isCompanyValid(companyName)) {
@@ -108,8 +104,8 @@ public class RedditCompanyScraper implements CompanyScraper {
                 // distance between it and the domain of the careers website
                 LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
                 if (existing == null ||
-                        editDistance.apply(companyName, companyWebsite.getHost()) <
-                                editDistance.apply(existing.getName(), companyWebsite.getHost())) {
+                        editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
+                                editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
                     Company company = new Company();
                     company.setName(companyName);
                     company.setWebsite(companyWebsite.toString());

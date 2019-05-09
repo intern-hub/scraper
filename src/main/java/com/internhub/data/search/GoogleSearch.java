@@ -1,4 +1,4 @@
-package com.internhub.scraper.search;
+package com.internhub.data.search;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
