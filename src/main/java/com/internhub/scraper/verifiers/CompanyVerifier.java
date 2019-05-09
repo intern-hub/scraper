@@ -31,6 +31,9 @@ public class CompanyVerifier {
         // Company names with punctuation can be discarded
         if (companyName.contains("/") ||
                 companyName.contains(",") ||
+                companyName.contains("\\") ||
+                companyName.contains("[") ||
+                companyName.contains("]") ||
                 companyName.contains("(") ||
                 companyName.contains(")")) {
             return false;
@@ -92,6 +95,7 @@ public class CompanyVerifier {
                 websiteRoot.contains("glassdoor.com") ||
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
+                websiteRoot.contains("quantstart.com") ||
                 websiteRoot.contains("indeed.com")) {
             m_search_cache.put(companyName, null);
             return null;
