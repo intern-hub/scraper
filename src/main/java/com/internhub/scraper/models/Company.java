@@ -1,26 +1,42 @@
 package com.internhub.scraper.models;
 
-public class Company {
-    private String m_name;
+import javax.persistence.*;
 
-    public Company(String name) {
-        this.m_name = name;
+@Entity
+@Table(name = "COMPANIES")
+public class Company {
+    @Id
+    @GeneratedValue
+    @Column(name = "id")
+    private int id;
+    @Column(name = "name")
+    private String name;
+    @Column(name = "website")
+    private String website;
+
+    public Company() {}
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
-        return m_name;
+        return name;
     }
 
-    @Override
-    public int hashCode() {
-        return m_name.hashCode();
+    public void setName(String name) {
+        this.name = name;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Company)) {
-            return false;
-        }
-        return m_name.equals(((Company) o).m_name);
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
     }
 }

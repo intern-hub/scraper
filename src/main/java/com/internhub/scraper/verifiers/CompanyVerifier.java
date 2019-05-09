@@ -10,35 +10,21 @@ import java.util.Map;
 
 public class CompanyVerifier {
     private GoogleSearch m_google;
-    private Map<String, Boolean> m_verified;
+    private Map<String, URL> m_search_cache;
 
     public CompanyVerifier() {
         this.m_google = new GoogleSearch();
-        this.m_verified = new HashMap<>();
+        this.m_search_cache = new HashMap<>();
     }
 
     public boolean isCompanyValid(String companyName) {
-        // Use cached result if we need for previous verifications
-        if (m_verified.containsKey(companyName)) {
-            return m_verified.get(companyName);
-        }
-
-        // If the result isn't cached, verify it on Google and then cache result
-        boolean verified = isCompanyWellFormed(companyName) && isCompanySearchable(companyName);
-        m_verified.put(companyName, verified);
-
-        // TODO: properly log result
-        if (verified)
-            System.out.println(companyName + " has been successfully verified.");
-        else
-            System.out.println("Ignoring " + companyName + " ...");
-
-        return verified;
+        // Conditions for verification: well-formed name, proper careers website
+        return isCompanyWellFormed(companyName) && getCompanyWebsite(companyName) != null;
     }
 
-    public boolean isCompanyWellFormed(String companyName) {
+    private boolean isCompanyWellFormed(String companyName) {
         // Abbreviations for companies can be discarded on the basis of being too short
-        if (companyName.length() <= 3) {
+        if (companyName.length() < 3) {
             return false;
         }
 
@@ -59,7 +45,12 @@ public class CompanyVerifier {
         return true;
     }
 
-    public boolean isCompanySearchable(String companyName) {
+    public URL getCompanyWebsite(String companyName) {
+        // Cache search results so we don't have to wait unnecessarily
+        if (m_search_cache.containsKey(companyName)) {
+            return m_search_cache.get(companyName);
+        }
+
         // Perform one Google search for "[COMPANY] careers website" and get first link
         // Perform another Google search for "[COMPANY] internship apply" and get first link
         List<URL> websiteSearch;
@@ -74,7 +65,8 @@ public class CompanyVerifier {
 
         // Any empty searches indicate that nothing can be found for that company
         if (websiteSearch.isEmpty() || internSearch.isEmpty()) {
-            return false;
+            m_search_cache.put(companyName, null);
+            return null;
         }
 
         //  Make sure both links have the company name in them
@@ -85,7 +77,12 @@ public class CompanyVerifier {
                 .replace(" ", "");
         if (!careersWebsite.getHost().contains(truncatedName) ||
                 !internWebsite.getHost().contains(truncatedName)) {
-            return false;
+            // If this fails, it is still possible that the company
+            // is valid, if the websites have the same host
+            if (!careersWebsite.getHost().equals(internWebsite.getHost())) {
+                m_search_cache.put(companyName, null);
+                return null;
+            }
         }
 
         //  Make sure both links aren't from generic websites or job listings
@@ -96,9 +93,11 @@ public class CompanyVerifier {
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
                 websiteRoot.contains("indeed.com")) {
-            return false;
+            m_search_cache.put(companyName, null);
+            return null;
         }
 
-        return true;
+        m_search_cache.put(companyName, careersWebsite);
+        return careersWebsite;
     }
 }
