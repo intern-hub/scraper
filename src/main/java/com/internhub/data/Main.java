@@ -8,6 +8,8 @@ import com.internhub.data.scrapers.positions.GreedyPositionScraper;
 import com.internhub.data.scrapers.positions.PositionScraper;
 
 public class Main {
+
+
     public static void main(String[] args) {
         /*
         CompanyScraper scraper = new RedditCompanyScraper();
@@ -15,6 +17,9 @@ public class Main {
             System.out.println(company.getName() + " @ " + company.getWebsite());
         }
         */
+
+        System.setProperty("webdriver.chrome.driver", "src/main/Resources/chromedriver");
+
         PositionScraper scraper = new GreedyPositionScraper();
         Company test = new Company();
         test.setName("Capital One");
@@ -22,5 +27,7 @@ public class Main {
         for (Position position : scraper.fetch(test)) {
             System.out.println(position.getLink());
         }
+
+        System.out.println("Main");
     }
 }
