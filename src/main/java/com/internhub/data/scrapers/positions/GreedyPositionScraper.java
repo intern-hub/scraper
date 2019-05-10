@@ -129,6 +129,7 @@ public class GreedyPositionScraper implements PositionScraper {
                 Document iframeHTML = Jsoup.parse(m_driver.getPageSource());
                 Elements iframeBody = fixHTMLBody(iframeHTML.select("body"));
                 iframeBodies.add(iframeBody);
+                m_driver.switchTo().defaultContent();
             }
 
             Elements verified = null;

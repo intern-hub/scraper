@@ -8,7 +8,7 @@ public class Company {
     @Id
     @GeneratedValue
     @Column(name = "id")
-    private int id;
+    private long id;
     @Column(name = "name")
     private String name;
     @Column(name = "website")
@@ -16,12 +16,8 @@ public class Company {
 
     public Company() {}
 
-    public int getId() {
+    public long getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getName() {

@@ -8,7 +8,7 @@ public class Position {
     @GeneratedValue
     @Id
     @Column(name = "id")
-    private int id;
+    private long id;
     @Column(name = "link")
     private String link;
     @ManyToOne
@@ -28,12 +28,8 @@ public class Position {
 
     public Position() {}
 
-    public int getId() {
+    public long getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getLink() {

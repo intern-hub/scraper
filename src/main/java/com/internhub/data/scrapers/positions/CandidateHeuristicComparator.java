@@ -26,7 +26,7 @@ public class CandidateHeuristicComparator implements Comparator<CandidatePositio
 
     @Override
     public int compare(CandidatePosition c1, CandidatePosition c2) {
-        return heuristic(c1) - heuristic(c2);
+        return heuristic(c2) - heuristic(c1);
     }
 
     private int heuristic(CandidatePosition candidate) {
