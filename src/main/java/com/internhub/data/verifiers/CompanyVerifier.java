@@ -28,6 +28,11 @@ public class CompanyVerifier {
             return false;
         }
 
+        // Company names must less than or equal to 3 words
+        if (companyName.chars().filter(Character::isWhitespace).count() > 2) {
+            return false;
+        }
+
         // Company names with punctuation can be discarded
         if (companyName.contains("/") ||
                 companyName.contains(",") ||
