@@ -21,8 +21,8 @@ import java.net.URL;
 import java.util.*;
 
 public class RedditCompanyScraper implements CompanyScraper {
-    private static final String REDDIT_CLIENT_ID = "WlcJSnReHivl-Q";
-    private static final String REDDIT_CLIENT_SECRET = "ohxqq8KaDWMlAsWHPm-u-lOCDUw";
+    private static final String REDDIT_CLIENT_ID = "Wd8K7RKBs4Z-5g";
+    private static final String REDDIT_CLIENT_SECRET = "OH9Bl_aZ8fQ2NXW66g77e9dNiNg";
     private static final String REDDIT_COMPANY_LABEL = "Company/Industry: ";
 
     private Map<URL, Company> m_unique_results;
