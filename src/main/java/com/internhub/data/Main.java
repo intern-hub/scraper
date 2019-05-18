@@ -8,6 +8,8 @@ import com.internhub.data.scrapers.positions.GreedyPositionScraper;
 import com.internhub.data.scrapers.positions.PositionScraper;
 import org.apache.commons.exec.OS;
 
+import java.net.MalformedURLException;
+
 public class Main {
 
 
@@ -37,8 +39,13 @@ public class Main {
         Company test = new Company();
         test.setName("Capital One");
         test.setWebsite("https://www.capitalonecareers.com/");
-        for (Position position : scraper.fetch(test)) {
-            System.out.println(position.getLink());
+        try {
+            for (Position position : scraper.fetch(test)) {
+                System.out.println(position.getLink());
+            }
+        }
+        catch (MalformedURLException ex) {
+            ex.printStackTrace();
         }
     }
 }

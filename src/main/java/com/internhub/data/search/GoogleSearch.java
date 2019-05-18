@@ -65,9 +65,10 @@ public class GoogleSearch {
                     break;
                 }
                 String link = anchor.attr("href");
-                URL url = constructURL(link);
-                if (url != null) {
-                    links.add(url);
+                try {
+                    links.add(constructURL(link));
+                } catch (MalformedURLException ex) {
+                    // Malformed links should simply be discarded (#, mailto:, etc.)
                 }
             }
         }
@@ -77,27 +78,23 @@ public class GoogleSearch {
         try {
             Thread.sleep(PAUSE_DELAY_MIN + random.nextInt(PAUSE_DELAY_MAX - PAUSE_DELAY_MIN + 1));
         }
-        catch (InterruptedException inter) {
-            inter.printStackTrace();
+        catch (InterruptedException ex) {
+            // Not that important, can be ignored
         }
 
         return links;
     }
 
-    private URL constructURL(String link) {
-        try {
-            URL url = new URL(link);
-            String domain = url.getHost();
-            return domain.length() > 0 ? url : null;
-        } catch (MalformedURLException ex) {
-            return null;
+    private URL constructURL(String link) throws MalformedURLException {
+        URL url = new URL(link);
+        String domain = url.getHost();
+        if (domain.length() == 0) {
+            throw new MalformedURLException();
         }
+        return url;
     }
 
     private Document fetchPage(String pageUrl) throws IOException {
-        return Jsoup
-                .connect(pageUrl)
-                .userAgent(USER_AGENT)
-                .get();
+        return Jsoup.connect(pageUrl).userAgent(USER_AGENT).get();
     }
 }
