@@ -7,13 +7,12 @@ import java.util.*;
 
 public class PositionVerifier {
 
-    public boolean isPositionValid(String applicationLink, Elements applicationPage) {
+    public boolean isPositionValid(String applicationLink, Elements applicationPage)  {
 
-        // TODO: Differentiate between general applications and internship applications - (eg - appearance of the word internship)
         // TODO: Try to find more effective heuristics to add
 
         int score = 0;
-        int threshold = 1;
+        int threshold = 2;
         
         List<String> keyWords= Arrays.asList("apply", "start", "application", "submit");
 
@@ -28,12 +27,20 @@ public class PositionVerifier {
             }
         }
 
+        List<String> internWords= Arrays.asList("intern", "internship");        
+        if (score >= 1) {
+            String pageText = applicationPage.text();
+            for(String keyStr: internWords) {
+                if (pageText.trim().toLowerCase().contains(keyStr)) {
+                    score += 1;
+                }
+            }
+        }
+
         if (score >= threshold) {
             return true;
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
     public String getPositionTitle(String applicationLink, Elements applicationPage) {
@@ -41,20 +48,50 @@ public class PositionVerifier {
         // TODO add more heuristics
 
         if (this.isPositionValid(applicationLink, applicationPage)) {
-            List<String> title_list = applicationPage.select("h1").eachText();
-            if (title_list.size() > 0) {
-                return title_list.get(0);
+            List<String> titleList = applicationPage.select("h1").eachText();
+            if (titleList.size() > 0) {
+                return titleList.get(0);
             }
-            else {
-                return null;
-            }
-            
         }
+        
+        return null;
     }
 
-    public Season getPositionSeason(String applicationLink, Elements applicationPage) { return Season.SUMMER; }
+    public Season getPositionSeason(String applicationLink, Elements applicationPage) {
+        
+        if (this.isPositionValid(applicationLink, applicationPage)) {
+            String pageText = applicationPage.text().trim().toLowerCase();
 
-    public int getPositionYear(String applicationLink, Elements applicationPage) { return 2019; }
+            if (pageText.contains("summer")) {
+                return Season.SUMMER;
+            }
+            else if (pageText.contains("fall")) {
+                return Season.FALL;
+            }
+            else if (pageText.contains("winter")) {
+                return Season.WINTER;
+            }
+            else if (pageText.contains("spring")) {
+                return Season.SPRING;
+            }
+        }
+        
+        return null;
+    }
+
+    public int getPositionYear(String applicationLink, Elements applicationPage) { 
+    
+        if (this.isPositionValid(applicationLink, applicationPage)) {
+            String pageText = applicationPage.text().trim().toLowerCase();
+            List<String> yearList = Arrays.asList("2020","2019"); 
+            for(String currYear: yearList) {
+                if (pageText.contains(currYear)) {
+                    return Integer.parseInt(currYear);
+                }
+            } 
+        }    
+        return -1; 
+    }
 
     public String getPositionDegree(String applicationLink, Elements applicationPage) { return null; }
 
