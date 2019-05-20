@@ -21,8 +21,8 @@ import java.net.URL;
 import java.util.*;
 
 public class RedditCompanyScraper implements CompanyScraper {
-    private static final String REDDIT_CLIENT_ID = "WlcJSnReHivl-Q";
-    private static final String REDDIT_CLIENT_SECRET = "ohxqq8KaDWMlAsWHPm-u-lOCDUw";
+    private static final String REDDIT_CLIENT_ID = "Wd8K7RKBs4Z-5g"; // updated
+    private static final String REDDIT_CLIENT_SECRET = "OH9Bl_aZ8fQ2NXW66g77e9dNiNg"; // updated
     private static final String REDDIT_COMPANY_LABEL = "Company/Industry: ";
 
     private Map<URL, Company> m_unique_results;
@@ -30,7 +30,7 @@ public class RedditCompanyScraper implements CompanyScraper {
     private CompanyVerifier m_verifier;
 
     public RedditCompanyScraper() {
-        UserAgent userAgent = new UserAgent("bot", "com.internhub.data", "1.0.0", "dmhacker");
+        UserAgent userAgent = new UserAgent("bot", "com.internhub.data", "1.0.0", "internhub");
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
         this.m_verifier = new CompanyVerifier();

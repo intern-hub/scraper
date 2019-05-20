@@ -20,11 +20,19 @@ public class PositionManager {
     // For each new scraped, transient position object {$LINK, $INFO}:
     // If position with $LINK exists, update existing position with $INFO.
     // Otherwise, add the entire position to the database
+    @SuppressWarnings("Duplicates")
     public void bulkUpdate(List<Position> newPositions, Company oldCompany) {
         Session session = factory.openSession();
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
+            for (int k = 0; k < newPositions.size(); k++) {
+                String sql =  "SELECT * FROM  POSITIONS WHERE link=\"" + newPositions.get(k).getLink() + "\"";
+                List results = session.createSQLQuery(sql).list();
+                if(results == null) {
+                    session.save(newPositions.get(k));
+                }
+            }
 
             // TODO: Make calls to session here - push new positions, update existing positions
 
