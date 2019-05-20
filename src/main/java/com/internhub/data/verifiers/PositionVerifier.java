@@ -93,7 +93,39 @@ public class PositionVerifier {
         return -1; 
     }
 
-    public String getPositionDegree(String applicationLink, Elements applicationPage) { return null; }
+    public String getPositionDegree(String applicationLink, Elements applicationPage) {
 
-    public String getPositionLocation(String applicationLink, Elements applicationPage) { return null; }
+        if (this.isPositionValid(applicationLink, applicationPage)) {
+            String pageText = applicationPage.text().trim().toLowerCase();
+
+            if (pageText.contains("bachelor’s") || pageText.contains("bs")) {
+                return "bachelor's";
+            }
+            else if (pageText.contains("master's") || pageText.contains("ms")) {
+                return "master's";
+            }
+            else if (pageText.contains("phd")) {
+                return "phd"; 
+            }
+        } 
+        
+        return null;
+    }
+
+    public String getPositionLocation(String applicationLink, Elements applicationPage) { 
+
+        if (this.isPositionValid(applicationLink, applicationPage)) {
+            String pageText = applicationPage.text().trim().toLowerCase();
+            String[] words = pageText.split(" ");
+            for (int i = 0; i < words.length; i++) {
+                if (words[i].contains("location")) {
+                    if ((i+1) < words.length) {
+                        return words[i+1].replaceAll("[^a-zA-Z ]", "");
+                    } 
+                }
+            }
+        }
+
+        return null; 
+    }
 }
