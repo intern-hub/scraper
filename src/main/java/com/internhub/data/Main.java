@@ -37,8 +37,8 @@ public class Main {
 
         PositionScraper scraper = new GreedyPositionScraper();
         Company test = new Company();
-        test.setName("Capital One");
-        test.setWebsite("https://www.capitalonecareers.com/");
+        test.setName("Citadel");
+        test.setWebsite("https://www.citadel.com/careers/students/");
         try {
             for (Position position : scraper.fetch(test)) {
                 System.out.println(position.getLink());

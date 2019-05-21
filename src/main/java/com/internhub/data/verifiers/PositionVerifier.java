@@ -4,52 +4,72 @@ import com.internhub.data.models.Season;
 import org.jsoup.select.Elements;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PositionVerifier {
+    private static final int VALIDITY_THRESHOLD = 2;
+    private static List<String> VALID_SUBMISSION_BUTTONS;
+
+    static {
+        VALID_SUBMISSION_BUTTONS = Arrays.asList("apply", "start", "application", "submit");
+    }
+
+    private Map<String, String> m_savedTitles;
+
+    public PositionVerifier() {
+        this.m_savedTitles = new HashMap<>();
+    }
 
     public boolean isPositionValid(String applicationLink, Elements applicationPage)  {
-
-        // TODO: Try to find more effective heuristics to add
-
         int score = 0;
-        int threshold = 2;
-        
-        List<String> keyWords= Arrays.asList("apply", "start", "application", "submit");
 
-        Elements links = applicationPage.select("a[href]");
-        List<String> linkText = links.eachText();
-        
-        for(String keyStr: keyWords) {
-            for(String str: linkText) {
-                if(str.trim().toLowerCase().contains(keyStr)) {
-                    score += 1;
-                }                    
-            }
-        }
+        // Find all buttons in the page that have no more than 3 words in their text field
+        Elements links = applicationPage.select("a,button,a > span");
+        List<String> linkTexts = links.eachText()
+                .stream()
+                .filter(text -> text.chars().filter(Character::isWhitespace).count() <= 3)
+                .collect(Collectors.toList());
 
-        List<String> internWords= Arrays.asList("intern", "internship");        
-        if (score >= 1) {
-            String pageText = applicationPage.text();
-            for(String keyStr: internWords) {
-                if (pageText.trim().toLowerCase().contains(keyStr)) {
+        // Page must have an apply button for it to be valid
+        foundApplyButton:
+        for (String linkText : linkTexts) {
+            String shortenedText = linkText.trim().toLowerCase();
+            for (String buttonKeyword : VALID_SUBMISSION_BUTTONS) {
+                if (shortenedText.contains(buttonKeyword)) {
                     score += 1;
+                    break foundApplyButton;
                 }
             }
         }
 
-        if (score >= threshold) {
-            return true;
+        // Page must have a position title for it to be valid
+        if (getPositionTitle(applicationLink, applicationPage) != null) {
+            score += 1;
         }
-        return false;
+
+        return score >= VALIDITY_THRESHOLD;
     }
 
     public String getPositionTitle(String applicationLink, Elements applicationPage) {
-        // TODO: search headers in descending order
-        List<String> titleList = applicationPage.select("h1").eachText();
-        if (titleList.size() > 0) {
-            return titleList.get(0);
+        if (m_savedTitles.containsKey(applicationLink)) {
+            return m_savedTitles.get(applicationLink);
         }
-        return "Intern";
+
+        // Iterate over each header in the page, starting with the largest header
+        for (int hid = 1; hid <= 6; hid++) {
+            List<String> titleList = applicationPage.select("h" + hid).eachText();
+            for (String title : titleList) {
+                int idx = title.toLowerCase().indexOf("intern");
+                if (idx >= 0) {
+                    m_savedTitles.put(applicationLink, title);
+                    return title;
+                }
+            }
+        }
+
+        // Return null, indicating that no appropriate title was found
+        m_savedTitles.put(applicationLink, null);
+        return null;
     }
 
     public Season getPositionSeason(String applicationLink, Elements applicationPage) {
@@ -71,13 +91,19 @@ public class PositionVerifier {
 
     public int getPositionYear(String applicationLink, Elements applicationPage) { 
         String pageText = applicationPage.text().trim().toLowerCase();
-        List<String> yearList = Arrays.asList("2020","2019");
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR) + 1;
+        int nextYear = currentYear + 1;
+
+        // TODO: Only search large bodies of text, the title, and unordered lists
+
+        List<String> yearList = Arrays.asList(String.valueOf(nextYear), String.valueOf(currentYear));
         for(String currYear: yearList) {
             if (pageText.contains(currYear)) {
                 return Integer.parseInt(currYear);
             }
         }
-        return Calendar.getInstance().get(Calendar.YEAR);
+
+        return nextYear;
     }
 
     public String getPositionDegree(String applicationLink, Elements applicationPage) {

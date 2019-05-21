@@ -163,6 +163,15 @@ public class GreedyPositionScraper implements PositionScraper {
                 position.setDegree(m_verifier.getPositionDegree(currentLink, verified));
                 position.setLocation(m_verifier.getPositionLocation(currentLink, verified));
                 results.add(position);
+
+                logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
+                logger.info(String.format("[%d/%d] Title is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getTitle()));
+                logger.info(String.format("[%d/%d] Season & year is %s %d.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
+                logger.info(String.format("[%d/%d] Location is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getLocation()));
+                logger.info(String.format("[%d/%d] Minimum degree is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getDegree()));
+            }
+            else {
+                logger.info(String.format("[%d/%d] Skipping. Not a valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
             }
 
             if (candidate.getDepth() < MAX_DEPTH) {
