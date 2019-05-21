@@ -1,10 +1,13 @@
-package com.internhub.data.models;
+package com.internhub.data.managers;
 
 import javax.persistence.*;
+import com.internhub.data.models.Company;
+import com.internhub.data.models.Position;
+import com.internhub.data.models.Season;
 
 @Entity
-@Table(name = "POSITIONS")
-public class Position {
+@Table(name = "positions")
+public class PositionEntity1 {
     @GeneratedValue
     @Id
     @Column(name = "id")
@@ -13,7 +16,7 @@ public class Position {
     private String link;
     @ManyToOne
     @JoinColumn(name = "companyId")
-    private Company company;
+    private long company;
     @Column(name = "title")
     private String title;
     @Column(name = "season")
@@ -26,19 +29,17 @@ public class Position {
     @Column(name = "location")
     private String location;
 
-    public Position(long id, String link, Company company, String title, Season season, int year, String degree, String location) {
-        this.id = id;
-        this.link = link;
-        this.company = company;
-        this.title = title;
-        this.season = season;
-        this.year = year;
-        this.degree = degree;
-        this.location = location;
+
+    public PositionEntity1(long id, String name, String website) {
+        this.setCompany(id);
     }
 
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getLink() {
@@ -49,12 +50,12 @@ public class Position {
         this.link = link;
     }
 
-    public Company getCompany() {
+    public long getCompany() {
         return company;
     }
 
-    public void setCompany(Company company) {
-        this.company = company;
+    public void setCompany(long company_id) {
+        this.company = company_id;
     }
 
     public String getTitle() {

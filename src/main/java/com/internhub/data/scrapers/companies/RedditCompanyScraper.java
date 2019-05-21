@@ -106,6 +106,7 @@ public class RedditCompanyScraper implements CompanyScraper {
                 if (existing == null ||
                         editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
                                 editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
+                    /*
                     Company company = new Company();
                     company.setName(companyName);
                     company.setWebsite(companyWebsite.toString());
@@ -118,6 +119,8 @@ public class RedditCompanyScraper implements CompanyScraper {
                         System.out.println("Updating company (" + existing.getName() +
                                 " => " + companyName + ", " + companyWebsite + ").");
                     }
+
+                     */
                 }
                 else {
                     System.out.println("Company already verified: " + companyName + " => " + existing.getName());

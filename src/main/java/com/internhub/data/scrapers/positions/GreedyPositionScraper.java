@@ -151,6 +151,7 @@ public class GreedyPositionScraper implements PositionScraper {
             if (verified != null) {
                 // If the link was able to be verified, then the verifier will have
                 // data regarding the link (e.g position title, etc.)
+                /*
                 Position position = new Position();
                 position.setLink(currentLink);
                 position.setCompany(company);
@@ -160,6 +161,7 @@ public class GreedyPositionScraper implements PositionScraper {
                 position.setDegree(m_verifier.getPositionDegree(currentLink, verified));
                 position.setLocation(m_verifier.getPositionLocation(currentLink, verified));
                 results.add(position);
+                 */
             }
 
             if (candidate.getDepth() < MAX_DEPTH) {

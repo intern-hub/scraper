@@ -8,32 +8,68 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
+import java.io.File;
 import java.util.List;
 
 public class PositionManager {
     private static SessionFactory factory;
 
     static {
-        factory = new Configuration().configure().buildSessionFactory();
+        //factory = new Configuration().configure().buildSessionFactory();
+        factory = new Configuration().configure(new File("/Users/roshan/scraper/src/main/Resources/hibernate.cgf.xml")).buildSessionFactory();
     }
 
     // For each new scraped, transient position object {$LINK, $INFO}:
     // If position with $LINK exists, update existing position with $INFO.
     // Otherwise, add the entire position to the database
     @SuppressWarnings("Duplicates")
-    public void bulkUpdate(List<Position> newPositions, Company oldCompany) {
+    // Took out company parameter
+    public static void bulkUpdate(List<Position> newPositions) {
         Session session = factory.openSession();
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
             for (int k = 0; k < newPositions.size(); k++) {
-                String sql =  "SELECT * FROM  POSITIONS WHERE link=\"" + newPositions.get(k).getLink() + "\"";
+                String sql =  "SELECT * FROM  positions WHERE link=\"" + newPositions.get(k).getLink() + "\"";
                 List results = session.createSQLQuery(sql).list();
-                if(results == null) {
-                    session.save(newPositions.get(k));
-                }
-            }
+                String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
+                        newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
+                //System.out.println(insertSql);
+                session.createSQLQuery(insertSql);
 
+                String sql2 =  "SELECT * FROM  positions WHERE link=\"" + "www.yahoo.com" + "\"";
+                List results2 = session.createSQLQuery(sql).list();
+                //System.out.println(results2);
+                // session.save(newPositions.get(k));
+                session.getTransaction().commit();
+
+                PositionEntity1 pme1 = new PositionEntity1(newPositions.get(k).getId(), newPositions.get(k).getCompany().getName(), newPositions.get(k).getLink());
+                pme1.setId(newPositions.get(k).getId());
+                pme1.setDegree(newPositions.get(k).getDegree());
+                pme1.setLink(newPositions.get(k).getLink());
+                pme1.setLocation(newPositions.get(k).getLocation());
+                pme1.setSeason(newPositions.get(k).getSeason());
+                pme1.setTitle(newPositions.get(k).getTitle());
+                pme1.setYear(newPositions.get(k).getYear());
+                pme1.setCompany(newPositions.get(k).getCompany().getId());
+                session.save(pme1);
+                session.getTransaction().commit();
+
+
+                if(results == null) {
+                    /*
+                    String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
+                            newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
+                    System.out.println(insertSql);
+                    session.createSQLQuery(insertSql);
+
+                     */
+                    //session.save(newPositions.get(k));
+                    session.getTransaction().commit();
+
+                }
+
+            }
             // TODO: Make calls to session here - push new positions, update existing positions
 
             tx.commit();
