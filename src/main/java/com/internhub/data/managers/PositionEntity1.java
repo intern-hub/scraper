@@ -1,6 +1,7 @@
 package com.internhub.data.managers;
 
 import javax.persistence.*;
+import javax.persistence.Entity;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.models.Season;
@@ -54,8 +55,8 @@ public class PositionEntity1 {
         return company;
     }
 
-    public void setCompany(long company_id) {
-        this.company = company_id;
+    public void setCompany(long company) {
+        this.company = company;
     }
 
     public String getTitle() {

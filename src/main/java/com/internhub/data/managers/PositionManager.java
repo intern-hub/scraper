@@ -10,6 +10,7 @@ import org.hibernate.cfg.Configuration;
 
 import java.io.File;
 import java.util.List;
+import org.hibernate.query.Query;
 
 public class PositionManager {
     private static SessionFactory factory;
@@ -32,17 +33,17 @@ public class PositionManager {
             for (int k = 0; k < newPositions.size(); k++) {
                 String sql =  "SELECT * FROM  positions WHERE link=\"" + newPositions.get(k).getLink() + "\"";
                 List results = session.createSQLQuery(sql).list();
-                String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
-                        newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
+                //String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
+                //        newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
                 //System.out.println(insertSql);
-                session.createSQLQuery(insertSql);
+                //session.createSQLQuery(insertSql);
 
                 String sql2 =  "SELECT * FROM  positions WHERE link=\"" + "www.yahoo.com" + "\"";
                 List results2 = session.createSQLQuery(sql).list();
                 //System.out.println(results2);
-                // session.save(newPositions.get(k));
-                session.getTransaction().commit();
-
+                //session.save(newPositions.get(k));
+                //session.getTransaction().commit();
+                /*
                 PositionEntity1 pme1 = new PositionEntity1(newPositions.get(k).getId(), newPositions.get(k).getCompany().getName(), newPositions.get(k).getLink());
                 pme1.setId(newPositions.get(k).getId());
                 pme1.setDegree(newPositions.get(k).getDegree());
@@ -55,19 +56,31 @@ public class PositionManager {
                 session.save(pme1);
                 session.getTransaction().commit();
 
+                 */
 
+                Query query = session.createSQLQuery("INSERT INTO positions VALUES(:id, :degree, :link, :location, :season, :title, :year, :company_id)");
+                query.setParameter("id", newPositions.get(k).getId());
+                query.setParameter("degree", newPositions.get(k).getDegree());
+                query.setParameter("link", newPositions.get(k).getLink());
+                query.setParameter("location", newPositions.get(k).getLocation());
+                query.setParameter("season", 0);
+                query.setParameter("title", newPositions.get(k).getTitle());
+                query.setParameter("year", newPositions.get(k).getYear());
+                query.setParameter("company_id", newPositions.get(k).getCompany().getId());
+                query.executeUpdate();
+
+
+
+                /*
                 if(results == null) {
-                    /*
                     String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
                             newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
                     System.out.println(insertSql);
                     session.createSQLQuery(insertSql);
-
-                     */
                     //session.save(newPositions.get(k));
                     session.getTransaction().commit();
-
                 }
+                */
 
             }
             // TODO: Make calls to session here - push new positions, update existing positions
