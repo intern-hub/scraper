@@ -2,6 +2,7 @@ package com.internhub.data.managers;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
+import com.internhub.data.models.Season;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -33,54 +34,28 @@ public class PositionManager {
             for (int k = 0; k < newPositions.size(); k++) {
                 String sql =  "SELECT * FROM  positions WHERE link=\"" + newPositions.get(k).getLink() + "\"";
                 List results = session.createSQLQuery(sql).list();
-                //String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
-                //        newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
-                //System.out.println(insertSql);
-                //session.createSQLQuery(insertSql);
+                if(results.size() == 0) {
+                    Query query = session.createSQLQuery("INSERT INTO positions VALUES(:id, :degree, :link, :location, :season, :title, :year, :company_id)");
+                    query.setParameter("id", newPositions.get(k).getId());
+                    query.setParameter("degree", newPositions.get(k).getDegree());
+                    query.setParameter("link", newPositions.get(k).getLink());
+                    query.setParameter("location", newPositions.get(k).getLocation());
+                    switch(newPositions.get(k).getSeason()) {
+                        case SUMMER:
+                            query.setParameter("season", 0);
+                        case WINTER:
+                            query.setParameter("season", 1);
+                        case FALL:
+                            query.setParameter("season", 2);
+                        case SPRING:
+                            query.setParameter("season", 3);
 
-                String sql2 =  "SELECT * FROM  positions WHERE link=\"" + "www.yahoo.com" + "\"";
-                List results2 = session.createSQLQuery(sql).list();
-                //System.out.println(results2);
-                //session.save(newPositions.get(k));
-                //session.getTransaction().commit();
-                /*
-                PositionEntity1 pme1 = new PositionEntity1(newPositions.get(k).getId(), newPositions.get(k).getCompany().getName(), newPositions.get(k).getLink());
-                pme1.setId(newPositions.get(k).getId());
-                pme1.setDegree(newPositions.get(k).getDegree());
-                pme1.setLink(newPositions.get(k).getLink());
-                pme1.setLocation(newPositions.get(k).getLocation());
-                pme1.setSeason(newPositions.get(k).getSeason());
-                pme1.setTitle(newPositions.get(k).getTitle());
-                pme1.setYear(newPositions.get(k).getYear());
-                pme1.setCompany(newPositions.get(k).getCompany().getId());
-                session.save(pme1);
-                session.getTransaction().commit();
-
-                 */
-
-                Query query = session.createSQLQuery("INSERT INTO positions VALUES(:id, :degree, :link, :location, :season, :title, :year, :company_id)");
-                query.setParameter("id", newPositions.get(k).getId());
-                query.setParameter("degree", newPositions.get(k).getDegree());
-                query.setParameter("link", newPositions.get(k).getLink());
-                query.setParameter("location", newPositions.get(k).getLocation());
-                query.setParameter("season", 0);
-                query.setParameter("title", newPositions.get(k).getTitle());
-                query.setParameter("year", newPositions.get(k).getYear());
-                query.setParameter("company_id", newPositions.get(k).getCompany().getId());
-                query.executeUpdate();
-
-
-
-                /*
-                if(results == null) {
-                    String insertSql = "INSERT INTO positions VALUES (" +  newPositions.get(k).getId() + ", " + newPositions.get(k).getLink() + ", " +
-                            newPositions.get(k).getLocation() + ", " + newPositions.get(k).getSeason() + ", " + newPositions.get(k).getTitle() + ", " + newPositions.get(k).getYear() + ", " + newPositions.get(k).getCompany().getId() + ");";
-                    System.out.println(insertSql);
-                    session.createSQLQuery(insertSql);
-                    //session.save(newPositions.get(k));
-                    session.getTransaction().commit();
+                    }
+                    query.setParameter("title", newPositions.get(k).getTitle());
+                    query.setParameter("year", newPositions.get(k).getYear());
+                    query.setParameter("company_id", newPositions.get(k).getCompany().getId());
+                    query.executeUpdate();
                 }
-                */
 
             }
             // TODO: Make calls to session here - push new positions, update existing positions

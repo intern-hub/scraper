@@ -40,7 +40,7 @@ public class Main {
         //test.setName("Capital One");
         //test.setWebsite("https://www.capitalonecareers.com/");
         //int count = 5;
-        Position standard = new Position(123456, "www.yahoo.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
+        Position standard = new Position(12345678, "www.abcdefghijklmnop.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
                 "Software intern", Season.SUMMER, 2019, "BS", "Utah");
         List<Position> newPositions = new ArrayList<Position>(Arrays.asList(standard));
         /*
