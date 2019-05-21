@@ -55,6 +55,27 @@ public class PositionManager {
                     query.setParameter("year", newPositions.get(k).getYear());
                     query.setParameter("company_id", newPositions.get(k).getCompany().getId());
                     query.executeUpdate();
+                } else {
+                    // update existing position with $INFO
+                    Query query = session.createSQLQuery("UPDATE positions SET degree=:degree, location=:location, season=:season, title=:title, year=:year, company_id=:company_id WHERE link=:link");
+                    query.setParameter("degree", newPositions.get(k).getDegree());
+                    query.setParameter("link", newPositions.get(k).getLink());
+                    query.setParameter("location", newPositions.get(k).getLocation());
+                    switch(newPositions.get(k).getSeason()) {
+                        case SUMMER:
+                            query.setParameter("season", 0);
+                        case WINTER:
+                            query.setParameter("season", 1);
+                        case FALL:
+                            query.setParameter("season", 2);
+                        case SPRING:
+                            query.setParameter("season", 3);
+
+                    }
+                    query.setParameter("title", newPositions.get(k).getTitle());
+                    query.setParameter("year", newPositions.get(k).getYear());
+                    query.setParameter("company_id", newPositions.get(k).getCompany().getId());
+                    query.executeUpdate();
                 }
 
             }

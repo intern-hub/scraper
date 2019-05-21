@@ -43,6 +43,12 @@ public class CompanyManager {
                     query.setParameter("name", newCompanies.get(i).getName());
                     query.setParameter("website", newCompanies.get(i).getWebsite());
                     query.executeUpdate();
+                } else {
+                    // Update existing company object to have the same $WEBSITE
+                    Query query = session.createSQLQuery("UPDATE company SET website = :newWebsite WHERE name=:name");
+                    query.setParameter("newWebsite", newCompanies.get(i).getWebsite());
+                    query.setParameter("name", newCompanies.get(i).getName());
+                    query.executeUpdate();
                 }
             }
 

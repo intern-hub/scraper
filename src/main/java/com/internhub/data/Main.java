@@ -42,9 +42,11 @@ public class Main {
         //test.setName("Capital One");
         //test.setWebsite("https://www.capitalonecareers.com/");
         //int count = 5;
-        Position standard = new Position(12345678, "www.abcdefghijklmnop.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
+        Position standard1 = new Position(100, "www.seattle1.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
+                "OK", Season.SUMMER, 6969, "BS", "Utah");
+        Position standard2 = new Position(101, "www.seattle13.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
                 "Software intern", Season.SUMMER, 2019, "BS", "Utah");
-        List<Position> newPositions = new ArrayList<Position>(Arrays.asList(standard));
+        List<Position> newPositions = new ArrayList<Position>(Arrays.asList(standard1, standard2));
         /*
         for (Position position : posScraper.fetch(test)) {
             newPositions.add(position);
@@ -57,9 +59,12 @@ public class Main {
 
         pm.bulkUpdate(newPositions);
 
-        Company roshan = new Company(123456789, "roshan", "www.roshan.com");
-        List<Company> newCompanies = new ArrayList<>(Arrays.asList(roshan));
+        Company roshan1 = new Company(93, "roshan1", "www.pleaseworktyvm.com");
+        Company roshan2 = new Company(94, "roshan23", "www.roshan23.com");
+        List<Company> newCompanies = new ArrayList<>(Arrays.asList(roshan1, roshan2));
         cm.bulkUpdate(newCompanies);
+
+        // Replace company if name exists, replace position if link exists
 
 
 
