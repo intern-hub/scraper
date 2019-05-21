@@ -1,5 +1,6 @@
 package com.internhub.data;
 
+import com.internhub.data.managers.CompanyManager;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.models.Season;
@@ -22,6 +23,7 @@ import java.util.*;
 public class Main {
 
     public static PositionManager pm = new PositionManager();
+    public static CompanyManager cm = new CompanyManager();
 
     public static void main(String[] args) {
 
@@ -54,6 +56,13 @@ public class Main {
         */
 
         pm.bulkUpdate(newPositions);
+
+        Company roshan = new Company(123456789, "roshan", "www.roshan.com");
+        List<Company> newCompanies = new ArrayList<>(Arrays.asList(roshan));
+        cm.bulkUpdate(newCompanies);
+
+
+
 
     }
 }

@@ -5,6 +5,7 @@ import com.internhub.data.models.Position;
 import org.hibernate.*;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
 import org.hibernate.service.ServiceRegistry;
 
 import java.util.List;
@@ -34,10 +35,14 @@ public class CompanyManager {
         try {
             tx = session.beginTransaction();
             for(int i = 0; i < newCompanies.size(); i++) {
-                String sql = "SELECT * FROM  COMPANIES WHERE name=\"" + newCompanies.get(i).getName() + "\"";
+                String sql = "SELECT * FROM  company WHERE name=\"" + newCompanies.get(i).getName() + "\"";
                 List results = session.createSQLQuery(sql).list();
-                if(results == null) {
-                    session.save(newCompanies.get(i));
+                if(results.size() == 0) {
+                    Query query = session.createSQLQuery("INSERT INTO company VALUES(:id, :name, :website)");
+                    query.setParameter("id", newCompanies.get(i).getId());
+                    query.setParameter("name", newCompanies.get(i).getName());
+                    query.setParameter("website", newCompanies.get(i).getWebsite());
+                    query.executeUpdate();
                 }
             }
 
