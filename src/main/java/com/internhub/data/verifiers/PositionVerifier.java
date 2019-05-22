@@ -82,7 +82,7 @@ public class PositionVerifier {
 
 
     public int getPositionYear(String applicationLink, Elements applicationPage) { 
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR) + 1;
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         int nextYear = currentYear + 1;
 
         // Only search the title and large bodies of text
