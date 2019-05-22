@@ -8,8 +8,11 @@
         <property name="hibernate.connection.url">jdbc:mysql://acronym.cumbz8y4rove.us-west-1.rds.amazonaws.com:3306/acronym?serverTimezone=UTC</property>
         <property name="hibernate.connection.password">Gary2019</property>
         <property name="hibernate.connection.username">internhub</property>
-        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="hibernate.dialect">org.hibernate.dialect.MariaDB53Dialect</property>
+        <property name="hibernate.hbm2ddl.auto">none</property>
         <property name="show_sql">true</property>
-        <property name="hbm2ddl.auto">create</property>
+
+        <mapping class="com.internhub.data.models.Company"/>
+        <mapping class="com.internhub.data.models.Position"/>
     </session-factory>
 </hibernate-configuration>

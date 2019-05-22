@@ -23,13 +23,13 @@ public class PositionManager {
     // Otherwise, add the entire position to the database
     @SuppressWarnings("Duplicates")
     // Took out company parameter
-    public static void bulkUpdate(List<Position> newPositions) {
+    public void bulkUpdate(List<Position> newPositions) {
         Session session = factory.openSession();
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
             for (int k = 0; k < newPositions.size(); k++) {
-                String sql =  "SELECT * FROM  positions WHERE link=\"" + newPositions.get(k).getLink() + "\"";
+                String sql =  "SELECT * FROM positions WHERE link=\"" + newPositions.get(k).getLink() + "\"";
                 List results = session.createSQLQuery(sql).list();
                 if(results.size() == 0) {
                     Query query = session.createSQLQuery("INSERT INTO positions VALUES(:id, :degree, :link, :location, :season, :title, :year, :company_id)");

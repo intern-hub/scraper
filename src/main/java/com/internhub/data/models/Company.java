@@ -3,7 +3,7 @@ package com.internhub.data.models;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "COMPANIES")
+@Table(name = "companies")
 public class Company {
     @Id
     @GeneratedValue
