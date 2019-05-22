@@ -88,7 +88,7 @@ public class GoogleSearch {
     private URL constructURL(String link) throws MalformedURLException {
         URL url = new URL(link);
         String domain = url.getHost();
-        if (domain.length() == 0) {
+        if (domain.length() == 0 || link.contains("webcache")) {
             throw new MalformedURLException();
         }
         return url;

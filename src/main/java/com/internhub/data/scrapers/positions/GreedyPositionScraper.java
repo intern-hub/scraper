@@ -25,7 +25,7 @@ public class GreedyPositionScraper implements PositionScraper {
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
 
     private static final int MAX_DEPTH = 4;
-    private static final int MAX_ENTRY_LINKS = 5;
+    private static final int MAX_ENTRY_LINKS = 4;
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
 
@@ -154,17 +154,24 @@ public class GreedyPositionScraper implements PositionScraper {
             if (verified != null) {
                 // If the link was able to be verified, then the verifier will have
                 // data regarding the link (e.g position title, etc.)
-                /*
                 Position position = new Position();
                 position.setLink(currentLink);
                 position.setCompany(company);
                 position.setTitle(m_verifier.getPositionTitle(currentLink, verified));
-                position.setSeason(m_verifier.getPositionSeason(currentLink, verified));
                 position.setYear(m_verifier.getPositionYear(currentLink, verified));
+                position.setSeason(m_verifier.getPositionSeason(currentLink, verified));
                 position.setDegree(m_verifier.getPositionDegree(currentLink, verified));
                 position.setLocation(m_verifier.getPositionLocation(currentLink, verified));
                 results.add(position);
-                 */
+              
+                logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
+                logger.info(String.format("[%d/%d] Title is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getTitle()));
+                logger.info(String.format("[%d/%d] Season & year is %s %d.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
+                logger.info(String.format("[%d/%d] Location is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getLocation()));
+                logger.info(String.format("[%d/%d] Minimum degree is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getDegree()));
+            }
+            else {
+                logger.info(String.format("[%d/%d] Skipping. Not a valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
             }
 
             if (candidate.getDepth() < MAX_DEPTH) {
@@ -232,7 +239,7 @@ public class GreedyPositionScraper implements PositionScraper {
     }
 
     private boolean isInCompanyDomain(URL url, URL companyURL, String companyAbbrev) {
-        return url.getHost().equals(companyURL.getHost()) || companyURL.getHost().contains(companyAbbrev);
+        return url.getHost().equals(companyURL.getHost()) || url.getHost().contains(companyAbbrev);
     }
 
     private Elements fixHTMLBody(Elements html) {
