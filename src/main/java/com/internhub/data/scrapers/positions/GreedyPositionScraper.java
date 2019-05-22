@@ -25,7 +25,7 @@ public class GreedyPositionScraper implements PositionScraper {
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
 
     private static final int MAX_DEPTH = 4;
-    private static final int MAX_ENTRY_LINKS = 5;
+    private static final int MAX_ENTRY_LINKS = 4;
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
 
@@ -239,7 +239,7 @@ public class GreedyPositionScraper implements PositionScraper {
     }
 
     private boolean isInCompanyDomain(URL url, URL companyURL, String companyAbbrev) {
-        return url.getHost().equals(companyURL.getHost()) || companyURL.getHost().contains(companyAbbrev);
+        return url.getHost().equals(companyURL.getHost()) || url.getHost().contains(companyAbbrev);
     }
 
     private Elements fixHTMLBody(Elements html) {
