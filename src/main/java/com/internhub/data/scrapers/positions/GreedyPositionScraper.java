@@ -158,8 +158,8 @@ public class GreedyPositionScraper implements PositionScraper {
                 position.setLink(currentLink);
                 position.setCompany(company);
                 position.setTitle(m_verifier.getPositionTitle(currentLink, verified));
-                position.setSeason(m_verifier.getPositionSeason(currentLink, verified));
                 position.setYear(m_verifier.getPositionYear(currentLink, verified));
+                position.setSeason(m_verifier.getPositionSeason(currentLink, verified));
                 position.setDegree(m_verifier.getPositionDegree(currentLink, verified));
                 position.setLocation(m_verifier.getPositionLocation(currentLink, verified));
                 results.add(position);
