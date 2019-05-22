@@ -26,17 +26,6 @@ public class Position {
     @Column(name = "location")
     private String location;
 
-    public Position(long id, String link, Company company, String title, Season season, int year, String degree, String location) {
-        this.id = id;
-        this.link = link;
-        this.company = company;
-        this.title = title;
-        this.season = season;
-        this.year = year;
-        this.degree = degree;
-        this.location = location;
-    }
-
     public long getId() {
         return id;
     }

@@ -1,28 +1,18 @@
 package com.internhub.data.managers;
 
 import com.internhub.data.models.Company;
-import com.internhub.data.models.Position;
 import org.hibernate.*;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
-import org.hibernate.service.ServiceRegistry;
 
 import java.util.List;
-import java.io.File;
 
 public class CompanyManager {
     private static SessionFactory factory;
 
     static {
-        /*
-        Configuration configuration = new Configuration();
-        configuration.configure(new File("src/main/Resources/hibernate.cgf.xml"));
-        configuration.addAnnotatedClass(Position.class);
-        ServiceRegistry srvcReg = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
-        sessionFactory = configuration.buildSessionFactory(srvcReg);
-        */
-        factory = new Configuration().configure(new File("/Users/roshan/scraper/src/main/Resources/hibernate.cgf.xml")).buildSessionFactory();
+        String config = CompanyManager.class.getClassLoader().getResource("hibernate.cfg.xml").toExternalForm();
+        factory = new Configuration().configure(config).buildSessionFactory();
     }
 
     // For each new transient company object {$NAME, $WEBSITE}:
@@ -51,10 +41,6 @@ public class CompanyManager {
                     query.executeUpdate();
                 }
             }
-
-
-            // TODO: Make calls to session here
-
             tx.commit();
         } catch (HibernateException he) {
             if (tx != null)
