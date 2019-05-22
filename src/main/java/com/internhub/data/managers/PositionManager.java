@@ -1,15 +1,12 @@
 package com.internhub.data.managers;
 
-import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.models.Season;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
-import java.io.File;
 import java.util.List;
 import org.hibernate.query.Query;
 
@@ -17,8 +14,8 @@ public class PositionManager {
     private static SessionFactory factory;
 
     static {
-        //factory = new Configuration().configure().buildSessionFactory();
-        factory = new Configuration().configure(new File("/Users/roshan/scraper/src/main/Resources/hibernate.cgf.xml")).buildSessionFactory();
+        String config = PositionManager.class.getClassLoader().getResource("hibernate.cfg.xml").toExternalForm();
+        factory = new Configuration().configure(config).buildSessionFactory();
     }
 
     // For each new scraped, transient position object {$LINK, $INFO}:
@@ -79,8 +76,6 @@ public class PositionManager {
                 }
 
             }
-            // TODO: Make calls to session here - push new positions, update existing positions
-
             tx.commit();
         } catch (HibernateException he) {
             if (tx != null)

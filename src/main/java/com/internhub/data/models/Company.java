@@ -14,12 +14,6 @@ public class Company {
     @Column(name = "website")
     private String website;
 
-    public Company(long id, String name, String website) {
-        this.id = id;
-        this.name = name;
-        this.website = website;
-    }
-
     public long getId() {
         return id;
     }
