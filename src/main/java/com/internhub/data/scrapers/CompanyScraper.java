@@ -1,4 +1,4 @@
-package com.internhub.data.scrapers.companies;
+package com.internhub.data.scrapers;
 
 import com.internhub.data.models.Company;
 

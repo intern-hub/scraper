@@ -3,11 +3,10 @@ package com.internhub.data;
 import com.internhub.data.managers.CompanyManager;
 import com.internhub.data.managers.PositionManager;
 import com.internhub.data.models.Company;
-import com.internhub.data.models.Position;
-import com.internhub.data.scrapers.companies.CompanyScraper;
-import com.internhub.data.scrapers.companies.RedditCompanyScraper;
-import com.internhub.data.scrapers.positions.GreedyPositionScraper;
-import com.internhub.data.scrapers.positions.PositionScraper;
+import com.internhub.data.scrapers.CompanyScraper;
+import com.internhub.data.scrapers.impl.RedditCompanyScraper;
+import com.internhub.data.scrapers.impl.DefaultPositionScraper;
+import com.internhub.data.scrapers.PositionScraper;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
@@ -55,7 +54,7 @@ public class Main {
     private static void scrapePositions() {
         CompanyManager companyManager = new CompanyManager();
         PositionManager positionManager = new PositionManager();
-        PositionScraper positionScraper = new GreedyPositionScraper();
+        PositionScraper positionScraper = new DefaultPositionScraper();
         for (Company company : companyManager.selectAll()) {
             try {
                 positionManager.bulkUpdate(positionScraper.fetch(company));

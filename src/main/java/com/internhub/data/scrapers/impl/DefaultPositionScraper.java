@@ -1,7 +1,8 @@
-package com.internhub.data.scrapers.positions;
+package com.internhub.data.scrapers.impl;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
+import com.internhub.data.scrapers.PositionScraper;
 import com.internhub.data.search.GoogleSearch;
 import com.internhub.data.verifiers.PositionVerifier;
 import org.jsoup.Jsoup;
@@ -21,7 +22,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
-public class GreedyPositionScraper implements PositionScraper {
+public class DefaultPositionScraper implements PositionScraper {
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
 
     private static final int MAX_DEPTH = 4;
@@ -29,13 +30,13 @@ public class GreedyPositionScraper implements PositionScraper {
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
 
-    private static final Logger logger = LoggerFactory.getLogger(GreedyPositionScraper.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultPositionScraper.class);
 
     private WebDriver m_driver;
     private GoogleSearch m_google;
     private PositionVerifier m_verifier;
 
-    public GreedyPositionScraper() {
+    public DefaultPositionScraper() {
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
         options.addArguments(

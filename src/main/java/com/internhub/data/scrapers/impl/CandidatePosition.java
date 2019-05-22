@@ -1,4 +1,4 @@
-package com.internhub.data.scrapers.positions;
+package com.internhub.data.scrapers.impl;
 
 public class CandidatePosition {
     private String link;
