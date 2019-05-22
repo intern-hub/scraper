@@ -16,21 +16,26 @@ import net.dean.jraw.references.SubredditReference;
 import net.dean.jraw.tree.CommentNode;
 import net.dean.jraw.tree.RootCommentNode;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
 public class RedditCompanyScraper implements CompanyScraper {
-    private static final String REDDIT_CLIENT_ID = "Wd8K7RKBs4Z-5g"; // updated
-    private static final String REDDIT_CLIENT_SECRET = "OH9Bl_aZ8fQ2NXW66g77e9dNiNg"; // updated
+    private static final String REDDIT_CLIENT_ID = "Wd8K7RKBs4Z-5g";
+    private static final String REDDIT_CLIENT_SECRET = "OH9Bl_aZ8fQ2NXW66g77e9dNiNg";
     private static final String REDDIT_COMPANY_LABEL = "Company/Industry: ";
+
+    private static final Logger logger = LoggerFactory.getLogger(RedditCompanyScraper.class);
 
     private Map<URL, Company> m_unique_results;
     private RedditClient m_reddit;
     private CompanyVerifier m_verifier;
 
     public RedditCompanyScraper() {
-        UserAgent userAgent = new UserAgent("bot", "com.internhub.data", "1.0.0", "internhub");
+        UserAgent userAgent = new UserAgent("bot", "com.internhub", "1.0.0", "internhub");
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
         this.m_verifier = new CompanyVerifier();
@@ -93,42 +98,44 @@ public class RedditCompanyScraper implements CompanyScraper {
             }
             String companyName = commentClean.substring(beginIndex, endIndex).trim();
 
-            // TODO: Replace println calls with proper logging
-
-            // Use our verification utilities to make sure we have a valid company
-            if (m_verifier.isCompanyValid(companyName)) {
-                // Use the company's website to prune out duplicates
-                URL companyWebsite = m_verifier.getCompanyWebsite(companyName);
-                Company existing = m_unique_results.get(companyWebsite);
-                // We always settle for the company name that minimizes edit
-                // distance between it and the domain of the careers website
-                LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
-                if (existing == null ||
-                        editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
-                                editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
-                    /*
-                    Company company = new Company();
-                    company.setName(companyName);
-                    company.setWebsite(companyWebsite.toString());
-                    m_unique_results.put(companyWebsite, company);
-                    if (existing == null) {
-                        System.out.println("Identified new company (" + companyName +
-                                ", " + companyWebsite + ").");
+            try {
+                // Use our verification utilities to make sure we have a valid company
+                if (m_verifier.isCompanyValid(companyName)) {
+                    // Use the company's website to prune out duplicates
+                    URL companyWebsite = m_verifier.getCompanyWebsite(companyName);
+                    Company existing = m_unique_results.get(companyWebsite);
+                    // We always settle for the company name that minimizes edit
+                    // distance between it and the domain of the careers website
+                    LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
+                    if (existing == null ||
+                            editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
+                                    editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
+                        Company company = new Company();
+                        company.setName(companyName);
+                        company.setWebsite(companyWebsite.toString());
+                        m_unique_results.put(companyWebsite, company);
+                        if (existing == null) {
+                            logger.info(String.format(
+                                    "[%s] Identified! Website is %s.", companyName, companyWebsite));
+                        }
+                        else {
+                            logger.info(String.format(
+                                    "[%s] Replacing current company %s.", companyName, existing.getName()));
+                        }
                     }
-                    else{
-                        System.out.println("Updating company (" + existing.getName() +
-                                " => " + companyName + ", " + companyWebsite + ").");
+                    else {
+                        logger.info(String.format(
+                                "[%s] Skipping. Already exists as %s.", companyName, existing.getName()));
                     }
-
-                     */
                 }
                 else {
-                    System.out.println("Company already verified: " + companyName + " => " + existing.getName());
+                    logger.info(String.format(
+                            "[%s] Skipping. Unknown company.", companyName));
                 }
+            } catch (IOException ex) {
+                logger.error("Verification is failing.", ex);
             }
-            else {
-                System.out.println("Company verification failed: " + companyName);
-            }
+
             companyIndex = commentClean.indexOf(REDDIT_COMPANY_LABEL, companyIndex + 1);
         }
     }

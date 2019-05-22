@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 public class CompanyVerifier {
+    private static final String CAREERS_SEARCH_TERM = "%s careers website";
+    private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
+
     private GoogleSearch m_google;
     private Map<String, URL> m_search_cache;
 
@@ -17,7 +20,7 @@ public class CompanyVerifier {
         this.m_search_cache = new HashMap<>();
     }
 
-    public boolean isCompanyValid(String companyName) {
+    public boolean isCompanyValid(String companyName) throws IOException {
         // Conditions for verification: well-formed name, proper careers website
         return isCompanyWellFormed(companyName) && getCompanyWebsite(companyName) != null;
     }
@@ -53,7 +56,7 @@ public class CompanyVerifier {
         return true;
     }
 
-    public URL getCompanyWebsite(String companyName) {
+    public URL getCompanyWebsite(String companyName) throws IOException {
         // Cache search results so we don't have to wait unnecessarily
         if (m_search_cache.containsKey(companyName)) {
             return m_search_cache.get(companyName);
@@ -61,15 +64,8 @@ public class CompanyVerifier {
 
         // Perform one Google search for "[COMPANY] careers website" and get first link
         // Perform another Google search for "[COMPANY] internship apply" and get first link
-        List<URL> websiteSearch;
-        List<URL> internSearch;
-        try {
-            websiteSearch = m_google.search(companyName + " careers website", 1);
-            internSearch = m_google.search(companyName + " internship apply", 1);
-        }
-        catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
+        List<URL> websiteSearch = m_google.search(String.format(CAREERS_SEARCH_TERM, companyName), 1);
+        List<URL> internSearch = m_google.search(String.format(INTERNSHIP_SEARCH_TERM, companyName), 1);
 
         // Any empty searches indicate that nothing can be found for that company
         if (websiteSearch.isEmpty() || internSearch.isEmpty()) {

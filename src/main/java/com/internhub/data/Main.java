@@ -19,6 +19,9 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.*;
+import org.apache.commons.exec.OS;
+
+import java.net.MalformedURLException;
 
 public class Main {
 
@@ -26,7 +29,19 @@ public class Main {
     public static CompanyManager cm = new CompanyManager();
 
     public static void main(String[] args) {
-
+        // Set Chrome driver for Selenium
+        if (OS.isFamilyWindows()) {
+            System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
+        }
+        else if (OS.isFamilyMac()) {
+            System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver");
+        }
+        else if (OS.isFamilyUnix()) {
+            System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver_linux");
+        }
+        else {
+            throw new RuntimeException("Running on unsupported OS.");
+        }
 
         /*
         CompanyScraper comScraper = new RedditCompanyScraper();
@@ -34,40 +49,18 @@ public class Main {
             System.out.println(company.getName() + " @ " + company.getWebsite());
         }
          */
-
-        // System.setProperty("webdriver.chrome.driver", "src/main/Resources/chromedriver");
-
-        //PositionScraper posScraper = new GreedyPositionScraper();
-        //Company test = new Company();
-        //test.setName("Capital One");
-        //test.setWebsite("https://www.capitalonecareers.com/");
-        //int count = 5;
-        Position standard1 = new Position(100, "www.seattle1.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
-                "OK", Season.SUMMER, 6969, "BS", "Utah");
-        Position standard2 = new Position(101, "www.seattle13.com", new Company(99, "Dary Dillespie, Inc.", "www.daryd.com"),
-                "Software intern", Season.SUMMER, 2019, "BS", "Utah");
-        List<Position> newPositions = new ArrayList<Position>(Arrays.asList(standard1, standard2));
-        /*
-        for (Position position : posScraper.fetch(test)) {
-            newPositions.add(position);
-            count++;
-            if( count > 5 ) {
-                break;
+      
+        PositionScraper scraper = new GreedyPositionScraper();
+        Company test = new Company();
+        test.setName("Capital One");
+        test.setWebsite("https://www.capitalonecareers.com/");
+        try {
+            for (Position position : scraper.fetch(test)) {
+                System.out.println(position.getLink());
             }
         }
-        */
-
-        pm.bulkUpdate(newPositions);
-
-        Company roshan1 = new Company(93, "roshan1", "www.pleaseworktyvm.com");
-        Company roshan2 = new Company(94, "roshan23", "www.roshan23.com");
-        List<Company> newCompanies = new ArrayList<>(Arrays.asList(roshan1, roshan2));
-        cm.bulkUpdate(newCompanies);
-
-        // Replace company if name exists, replace position if link exists
-
-
-
-
+        catch (MalformedURLException ex) {
+            ex.printStackTrace();
+        }
     }
 }

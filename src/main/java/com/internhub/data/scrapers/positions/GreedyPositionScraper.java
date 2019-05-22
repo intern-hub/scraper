@@ -13,6 +13,8 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -20,9 +22,14 @@ import java.net.URL;
 import java.util.*;
 
 public class GreedyPositionScraper implements PositionScraper {
+    private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
+
     private static final int MAX_DEPTH = 4;
     private static final int MAX_ENTRY_LINKS = 5;
     private static final int MAX_TOTAL_LINKS = 100;
+    private static final int PAGE_LOAD_DELAY = 2000;
+
+    private static final Logger logger = LoggerFactory.getLogger(GreedyPositionScraper.class);
 
     private WebDriver m_driver;
     private GoogleSearch m_google;
@@ -43,38 +50,34 @@ public class GreedyPositionScraper implements PositionScraper {
     }
 
     @Override
-    public List<Position> fetch(Company company) {
+    public List<Position> fetch(Company company) throws MalformedURLException {
         // This information about the company will come in handy later
         String companyName = company.getName();
         String companyAbbrev = companyName.toLowerCase()
                 .replace(" ", "")
                 .replace(".", "")
                 .replace("&", "");
-        URL companyWebsite;
-        try {
-            companyWebsite = new URL(company.getWebsite());
-        } catch (MalformedURLException mue) {
-            throw new RuntimeException(mue);
-        }
+        URL companyWebsite = new URL(company.getWebsite());
 
         // Create priority queue used to determine which links to crawl first
+        List<Position> results = new ArrayList<>();
         PriorityQueue<CandidatePosition> frontier = new PriorityQueue<>(new CandidateHeuristicComparator());
         Set<String> visited = new HashSet<>();
 
         // Start with the first ${MAX_ENTRY_LINKS} links that Google finds for the company
         try {
-           for (URL url : m_google.search(company.getName() + " internship apply", MAX_ENTRY_LINKS)) {
-               if (isInCompanyDomain(url, companyWebsite, companyAbbrev)) {
+            String searchTerm = String.format(INTERNSHIP_SEARCH_TERM, companyName);
+            for (URL url : m_google.search(searchTerm, MAX_ENTRY_LINKS)) {
+                if (isInCompanyDomain(url, companyWebsite, companyAbbrev)) {
                     String link = fixLink(url.toString(), null, null);
                     frontier.add(new CandidatePosition(link, 1));
                     visited.add(link);
                 }
             }
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
+        } catch (IOException ex) {
+            logger.error("Initial search failed.", ex);
         }
 
-        List<Position> results = new ArrayList<>();
         int numTotalLinks = 0;
         while (!frontier.isEmpty() && numTotalLinks < MAX_TOTAL_LINKS) {
             // Pop our best candidate off of the frontier
@@ -86,22 +89,22 @@ public class GreedyPositionScraper implements PositionScraper {
             URL currentURL;
             try {
                 currentURL = new URL(currentLink);
-            } catch (MalformedURLException mue) {
-                // TODO: Log that we got an invalid URL
+            } catch (MalformedURLException ex) {
+                logger.error(currentLink + " is malformed.", ex);
                 continue;
             }
             String currentBase = currentURL.getProtocol() + "://" + currentURL.getHost();
 
-            // TODO: Replace println calls with proper logging
-            System.out.println("[" + numTotalLinks + "] Visiting " +
-                    currentLink + " (" + candidate.getDepth() + ") ...");
+            logger.info(String.format(
+                    "[%d/%d] Visiting %s (depth = %d) ...",
+                    numTotalLinks + 1, MAX_TOTAL_LINKS, currentLink, candidate.getDepth()));
 
             // Use Selenium to fetch the page and wait a bit for it to load
             m_driver.get(currentLink);
             try {
-                 Thread.sleep(2000);
+                 Thread.sleep(PAGE_LOAD_DELAY);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                logger.error("Could not wait for page to load.", ex);
             }
             String pageSource = m_driver.getPageSource();
 
@@ -190,7 +193,7 @@ public class GreedyPositionScraper implements PositionScraper {
                         URL childURL;
                         try {
                             childURL = new URL(childLink);
-                        } catch (MalformedURLException mue) {
+                        } catch (MalformedURLException ex) {
                             continue;
                         }
 
