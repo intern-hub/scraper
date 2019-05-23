@@ -48,8 +48,8 @@ public class CompanyVerifier {
         }
 
         // Throw out some obvious 'companies' that are getting by the Google process
-        if (companyName.equalsIgnoreCase("decacorn") ||
-                companyName.equalsIgnoreCase("unicorn")) {
+        if (companyName.toLowerCase().contains("decacorn") ||
+                companyName.toLowerCase().contains("unicorn")) {
             return false;
         }
 
