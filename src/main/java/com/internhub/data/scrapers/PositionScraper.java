@@ -1,4 +1,4 @@
-package com.internhub.data.scrapers.positions;
+package com.internhub.data.scrapers;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;

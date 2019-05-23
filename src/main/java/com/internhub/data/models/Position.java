@@ -3,7 +3,7 @@ package com.internhub.data.models;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "POSITIONS")
+@Table(name = "positions")
 public class Position {
     @GeneratedValue
     @Id
@@ -12,7 +12,7 @@ public class Position {
     @Column(name = "link")
     private String link;
     @ManyToOne
-    @JoinColumn(name = "companyId")
+    @JoinColumn(name = "company_id")
     private Company company;
     @Column(name = "title")
     private String title;
