@@ -3,6 +3,7 @@ package com.internhub.data.scrapers.impl;
 import com.internhub.data.models.Company;
 import com.internhub.data.scrapers.CompanyScraper;
 import com.internhub.data.verifiers.CompanyVerifier;
+import fastily.jwiki.core.Wiki;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
 import net.dean.jraw.http.OkHttpNetworkAdapter;
@@ -31,23 +32,25 @@ public class RedditCompanyScraper implements CompanyScraper {
 
     private static final Logger logger = LoggerFactory.getLogger(RedditCompanyScraper.class);
 
-    private Map<URL, Company> m_unique_results;
+    private Map<URL, Company> m_uniqueResults;
     private RedditClient m_reddit;
     private CompanyVerifier m_verifier;
+    private Wiki m_wiki;
 
     public RedditCompanyScraper() {
         UserAgent userAgent = new UserAgent("bot", "com.internhub", "1.0.0", "internhub");
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
         this.m_verifier = new CompanyVerifier();
-        this.m_unique_results = new HashMap<>();
+        this.m_uniqueResults = new HashMap<>();
+        this.m_wiki = new Wiki("en.wikipedia.org");
     }
 
     @Override
     public List<Company> fetch() {
         scrape();
-        List<Company> aggregated = new ArrayList<>(m_unique_results.values());
-        m_unique_results.clear();
+        List<Company> aggregated = new ArrayList<>(m_uniqueResults.values());
+        m_uniqueResults.clear();
         return aggregated;
     }
 
@@ -104,22 +107,47 @@ public class RedditCompanyScraper implements CompanyScraper {
                 if (m_verifier.isCompanyValid(companyName)) {
                     // Use the company's website to prune out duplicates
                     URL companyWebsite = m_verifier.getCompanyWebsite(companyName);
-                    Company existing = m_unique_results.get(companyWebsite);
+                    Company existing = m_uniqueResults.get(companyWebsite);
                     // We always settle for the company name that minimizes edit
                     // distance between it and the domain of the careers website
                     LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
                     if (existing == null ||
                             editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
                                     editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
+
                         Company company = new Company();
                         company.setName(companyName);
                         company.setWebsite(companyWebsite.toString());
-                        company.setDescription(""); // TODO: Replace with wikipedia blurb?
                         company.setPopularity(0);
-                        m_unique_results.put(companyWebsite, company);
+
+                        // Use Wikipedia to search for company descriptions
+                        // Prioritize technology and financial company pages
+                        String companyDescription = "";
+                        int descriptionScore = 0;
+                        for (String pageTitle : m_wiki.search(companyName + " company", 3)) {
+                            String page = m_wiki.getTextExtract(pageTitle);
+                            String pageLower = page.toLowerCase();
+                            if (pageLower.contains("company")) {
+                                int score = 0;
+                                if (pageLower.contains("tech")) {
+                                    score += 2;
+                                }
+                                if (pageLower.contains("financial") || pageLower.contains("investment")) {
+                                    score += 1;
+                                }
+                                if (score > descriptionScore) {
+                                    companyDescription = page;
+                                    descriptionScore = score;
+                                }
+                            }
+                        }
+                        company.setDescription(companyDescription);
+
+                        m_uniqueResults.put(companyWebsite, company);
                         if (existing == null) {
                             logger.info(String.format(
                                     "[%s] Identified! Website is %s.", companyName, companyWebsite));
+                            logger.info(String.format("[%s] Description is: %s", companyName, companyDescription));
                         }
                         else {
                             logger.info(String.format(
