@@ -124,24 +124,36 @@ public class RedditCompanyScraper implements CompanyScraper {
                         // Prioritize technology and financial company pages
                         String companyDescription = "No description could be found for this company.";
                         int descriptionScore = -1;
-                        for (String pageTitle : m_wiki.search(companyName + " company", 3)) {
+                        int bonusScore = 2;
+                        for (String pageTitle : m_wiki.search(companyName + " company", 2)) {
                             String page = m_wiki.getTextExtract(pageTitle);
+                            String fullPage = m_wiki.getPageText(pageTitle);
                             String pageLower = page.toLowerCase();
-                            if (pageLower.contains("company")) {
-                                int score = 0;
-                                if (pageLower.contains("tech")) {
+                            if (fullPage.contains("{{Infobox") && pageLower.contains("company")) {
+                                int score = bonusScore;
+                                if (pageLower.contains(companyName.toLowerCase())) {
                                     score += 100;
+                                }
+                                if (pageLower.contains("tech")) {
+                                    score += 20;
                                 }
                                 if (pageLower.contains("financial") || pageLower.contains("investment")) {
                                     score += 10;
                                 }
-                                if (pageLower.contains("media")) {
-                                    score += 5;
-                                }
                                 if (score > descriptionScore) {
                                     companyDescription = page;
                                     descriptionScore = score;
+
+                                    // Page title might actually have proper capitalization
+                                    if (editDistance.apply(pageTitle.toLowerCase(), companyWebsite.getHost()) <=
+                                        editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) &&
+                                        !pageTitle.contains("("))
+                                    {
+                                        companyName = pageTitle;
+                                        company.setName(companyName);
+                                    }
                                 }
+                                bonusScore--;
                             }
                         }
                         company.setDescription(companyDescription);
