@@ -114,6 +114,8 @@ public class RedditCompanyScraper implements CompanyScraper {
                         Company company = new Company();
                         company.setName(companyName);
                         company.setWebsite(companyWebsite.toString());
+                        company.setDescription(""); // TODO: Replace with wikipedia blurb?
+                        company.setPopularity(0);
                         m_unique_results.put(companyWebsite, company);
                         if (existing == null) {
                             logger.info(String.format(

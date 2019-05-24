@@ -13,9 +13,17 @@ public class Company {
     private String name;
     @Column(name = "website")
     private String website;
+    @Column(name = "description")
+    private String description;
+    @Column(name = "popularity")
+    private int popularity;
 
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -32,5 +40,21 @@ public class Company {
 
     public void setWebsite(String website) {
         this.website = website;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getPopularity() {
+        return popularity;
+    }
+
+    public void setPopularity(int popularity) {
+        this.popularity = popularity;
     }
 }
