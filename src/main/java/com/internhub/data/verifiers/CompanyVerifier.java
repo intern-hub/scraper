@@ -125,13 +125,15 @@ public class CompanyVerifier {
         // Use Wikipedia to search for company descriptions
         // Prioritize technology and financial company pages
         for (String pageTitle : m_wiki.search(String.format(WIKI_SEARCH_TERM, companyName), MAX_WIKI_PAGES)) {
-            String page = m_wiki.getTextExtract(pageTitle);
+            // Skip pages that don't have the original company name present
+            if (!pageTitle.toLowerCase().contains(companyName.toLowerCase())) {
+                continue;
+            }
+            // Page must contain an infobox and mention company at least once
             String fullPage = m_wiki.getPageText(pageTitle);
-            String pageLower = page.toLowerCase();
-            if (fullPage.contains("{{Infobox") &&
-                    pageLower.contains("company") &&
-                    pageTitle.toLowerCase().contains(companyName.toLowerCase()))
-            {
+            String pageExtract = m_wiki.getTextExtract(pageTitle);
+            String pageLower = pageExtract.toLowerCase();
+            if (fullPage.contains("{{Infobox") && pageLower.contains("company")) {
                 int score = bonusScore;
                 if (pageLower.contains(companyName.toLowerCase())) {
                     score += 100;
@@ -143,7 +145,7 @@ public class CompanyVerifier {
                     score += 10;
                 }
                 if (score > descriptionScore) {
-                    companyDescription = page;
+                    companyDescription = pageExtract;
                     descriptionScore = score;
 
                     // Page title might actually have proper capitalization
