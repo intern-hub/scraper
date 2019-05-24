@@ -1,6 +1,8 @@
 package com.internhub.data.verifiers;
 
 import com.internhub.data.search.GoogleSearch;
+import fastily.jwiki.core.Wiki;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import java.io.IOException;
 import java.net.URL;
@@ -11,13 +13,17 @@ import java.util.Map;
 public class CompanyVerifier {
     private static final String CAREERS_SEARCH_TERM = "%s careers website";
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
+    private static final String WIKI_SEARCH_TERM = "%s company llc";
+    private static final int MAX_WIKI_PAGES = 3;
 
     private GoogleSearch m_google;
-    private Map<String, URL> m_search_cache;
+    private Map<String, URL> m_searchCache;
+    private Wiki m_wiki;
 
     public CompanyVerifier() {
         this.m_google = new GoogleSearch();
-        this.m_search_cache = new HashMap<>();
+        this.m_searchCache = new HashMap<>();
+        this.m_wiki = new Wiki("en.wikipedia.org");
     }
 
     public boolean isCompanyValid(String companyName) throws IOException {
@@ -58,8 +64,8 @@ public class CompanyVerifier {
 
     public URL getCompanyWebsite(String companyName) throws IOException {
         // Cache search results so we don't have to wait unnecessarily
-        if (m_search_cache.containsKey(companyName)) {
-            return m_search_cache.get(companyName);
+        if (m_searchCache.containsKey(companyName)) {
+            return m_searchCache.get(companyName);
         }
 
         // Perform one Google search for "[COMPANY] careers website" and get first link
@@ -69,7 +75,7 @@ public class CompanyVerifier {
 
         // Any empty searches indicate that nothing can be found for that company
         if (websiteSearch.isEmpty() || internSearch.isEmpty()) {
-            m_search_cache.put(companyName, null);
+            m_searchCache.put(companyName, null);
             return null;
         }
 
@@ -86,7 +92,7 @@ public class CompanyVerifier {
             // If this fails, it is still possible that the company
             // is valid, if the websites have the same host
             if (!careersWebsite.getHost().equals(internWebsite.getHost())) {
-                m_search_cache.put(companyName, null);
+                m_searchCache.put(companyName, null);
                 return null;
             }
         }
@@ -102,11 +108,52 @@ public class CompanyVerifier {
                 websiteRoot.contains("angel.co") ||
                 websiteRoot.contains("lever.co") ||
                 websiteRoot.contains("indeed.com")) {
-            m_search_cache.put(companyName, null);
+            m_searchCache.put(companyName, null);
             return null;
         }
 
-        m_search_cache.put(companyName, careersWebsite);
+        m_searchCache.put(companyName, careersWebsite);
         return careersWebsite;
+    }
+
+    public String[] getCompanyNameAndDescription(String companyName, URL companyWebsite) {
+        LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
+        String companyDescription = "No description could be found for this company.";
+        int descriptionScore = -1;
+        int bonusScore = MAX_WIKI_PAGES;
+
+        // Use Wikipedia to search for company descriptions
+        // Prioritize technology and financial company pages
+        for (String pageTitle : m_wiki.search(String.format(WIKI_SEARCH_TERM, companyName), MAX_WIKI_PAGES)) {
+            String page = m_wiki.getTextExtract(pageTitle);
+            String fullPage = m_wiki.getPageText(pageTitle);
+            String pageLower = page.toLowerCase();
+            if (fullPage.contains("{{Infobox") && pageLower.contains("company")) {
+                int score = bonusScore;
+                if (pageLower.contains(companyName.toLowerCase())) {
+                    score += 100;
+                }
+                if (pageLower.contains("tech")) {
+                    score += 20;
+                }
+                if (pageLower.contains("financial") || pageLower.contains("investment")) {
+                    score += 10;
+                }
+                if (score > descriptionScore) {
+                    companyDescription = page;
+                    descriptionScore = score;
+
+                    // Page title might actually have proper capitalization
+                    if (editDistance.apply(pageTitle.toLowerCase(), companyWebsite.getHost()) <=
+                            editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) &&
+                            !pageTitle.contains("("))
+                    {
+                        companyName = pageTitle;
+                    }
+                }
+                bonusScore--;
+            }
+        }
+        return new String[] {companyName, companyDescription};
     }
 }

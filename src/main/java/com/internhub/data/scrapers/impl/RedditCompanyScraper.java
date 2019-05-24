@@ -35,7 +35,6 @@ public class RedditCompanyScraper implements CompanyScraper {
     private Map<URL, Company> m_uniqueResults;
     private RedditClient m_reddit;
     private CompanyVerifier m_verifier;
-    private Wiki m_wiki;
 
     public RedditCompanyScraper() {
         UserAgent userAgent = new UserAgent("bot", "com.internhub", "1.0.0", "internhub");
@@ -43,7 +42,6 @@ public class RedditCompanyScraper implements CompanyScraper {
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
         this.m_verifier = new CompanyVerifier();
         this.m_uniqueResults = new HashMap<>();
-        this.m_wiki = new Wiki("en.wikipedia.org");
     }
 
     @Override
@@ -115,48 +113,17 @@ public class RedditCompanyScraper implements CompanyScraper {
                             editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
                                     editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
 
+                        // Use our verification tools to get additional information about the company
+                        String[] companyUpdates = m_verifier.getCompanyNameAndDescription(companyName, companyWebsite);
+                        companyName = companyUpdates[0];
+                        String companyDescription = companyUpdates[1];
+
+                        // Create a transient company object that can be inserted into the database
                         Company company = new Company();
                         company.setName(companyName);
+                        company.setDescription(companyDescription);
                         company.setWebsite(companyWebsite.toString());
                         company.setPopularity(0);
-
-                        // Use Wikipedia to search for company descriptions
-                        // Prioritize technology and financial company pages
-                        String companyDescription = "No description could be found for this company.";
-                        int descriptionScore = -1;
-                        int bonusScore = 2;
-                        for (String pageTitle : m_wiki.search(companyName + " company", 2)) {
-                            String page = m_wiki.getTextExtract(pageTitle);
-                            String fullPage = m_wiki.getPageText(pageTitle);
-                            String pageLower = page.toLowerCase();
-                            if (fullPage.contains("{{Infobox") && pageLower.contains("company")) {
-                                int score = bonusScore;
-                                if (pageLower.contains(companyName.toLowerCase())) {
-                                    score += 100;
-                                }
-                                if (pageLower.contains("tech")) {
-                                    score += 20;
-                                }
-                                if (pageLower.contains("financial") || pageLower.contains("investment")) {
-                                    score += 10;
-                                }
-                                if (score > descriptionScore) {
-                                    companyDescription = page;
-                                    descriptionScore = score;
-
-                                    // Page title might actually have proper capitalization
-                                    if (editDistance.apply(pageTitle.toLowerCase(), companyWebsite.getHost()) <=
-                                        editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) &&
-                                        !pageTitle.contains("("))
-                                    {
-                                        companyName = pageTitle;
-                                        company.setName(companyName);
-                                    }
-                                }
-                                bonusScore--;
-                            }
-                        }
-                        company.setDescription(companyDescription);
 
                         m_uniqueResults.put(companyWebsite, company);
                         if (existing == null) {
