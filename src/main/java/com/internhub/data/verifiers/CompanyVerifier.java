@@ -13,8 +13,8 @@ import java.util.Map;
 public class CompanyVerifier {
     private static final String CAREERS_SEARCH_TERM = "%s careers website";
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
-    private static final String WIKI_SEARCH_TERM = "%s company llc";
-    private static final int MAX_WIKI_PAGES = 3;
+    private static final String WIKI_SEARCH_TERM = "%s company";
+    private static final int MAX_WIKI_PAGES = 4;
 
     private GoogleSearch m_google;
     private Map<String, URL> m_searchCache;
