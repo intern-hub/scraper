@@ -3,6 +3,7 @@ package com.internhub.data.scrapers.impl;
 import com.internhub.data.models.Company;
 import com.internhub.data.scrapers.CompanyScraper;
 import com.internhub.data.verifiers.CompanyVerifier;
+import fastily.jwiki.core.Wiki;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
 import net.dean.jraw.http.OkHttpNetworkAdapter;
@@ -31,7 +32,7 @@ public class RedditCompanyScraper implements CompanyScraper {
 
     private static final Logger logger = LoggerFactory.getLogger(RedditCompanyScraper.class);
 
-    private Map<URL, Company> m_unique_results;
+    private Map<URL, Company> m_uniqueResults;
     private RedditClient m_reddit;
     private CompanyVerifier m_verifier;
 
@@ -40,14 +41,14 @@ public class RedditCompanyScraper implements CompanyScraper {
         NetworkAdapter networkAdapter = new OkHttpNetworkAdapter(userAgent);
         this.m_reddit = OAuthHelper.automatic(networkAdapter, Credentials.userless(REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, UUID.randomUUID()));
         this.m_verifier = new CompanyVerifier();
-        this.m_unique_results = new HashMap<>();
+        this.m_uniqueResults = new HashMap<>();
     }
 
     @Override
     public List<Company> fetch() {
         scrape();
-        List<Company> aggregated = new ArrayList<>(m_unique_results.values());
-        m_unique_results.clear();
+        List<Company> aggregated = new ArrayList<>(m_uniqueResults.values());
+        m_uniqueResults.clear();
         return aggregated;
     }
 
@@ -104,20 +105,31 @@ public class RedditCompanyScraper implements CompanyScraper {
                 if (m_verifier.isCompanyValid(companyName)) {
                     // Use the company's website to prune out duplicates
                     URL companyWebsite = m_verifier.getCompanyWebsite(companyName);
-                    Company existing = m_unique_results.get(companyWebsite);
+                    Company existing = m_uniqueResults.get(companyWebsite);
                     // We always settle for the company name that minimizes edit
                     // distance between it and the domain of the careers website
                     LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
                     if (existing == null ||
                             editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) <
                                     editDistance.apply(existing.getName().toLowerCase(), companyWebsite.getHost())) {
+
+                        // Use our verification tools to get additional information about the company
+                        String[] companyUpdates = m_verifier.getCompanyNameAndDescription(companyName, companyWebsite);
+                        companyName = companyUpdates[0];
+                        String companyDescription = companyUpdates[1];
+
+                        // Create a transient company object that can be inserted into the database
                         Company company = new Company();
                         company.setName(companyName);
+                        company.setDescription(companyDescription);
                         company.setWebsite(companyWebsite.toString());
-                        m_unique_results.put(companyWebsite, company);
+                        company.setPopularity(0);
+
+                        m_uniqueResults.put(companyWebsite, company);
                         if (existing == null) {
                             logger.info(String.format(
                                     "[%s] Identified! Website is %s.", companyName, companyWebsite));
+                            logger.info(String.format("[%s] Description is: %s", companyName, companyDescription));
                         }
                         else {
                             logger.info(String.format(
