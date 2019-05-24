@@ -149,8 +149,9 @@ public class CompanyVerifier {
                     descriptionScore = score;
 
                     // Page title might actually have proper capitalization
-                    if (editDistance.apply(pageTitle.toLowerCase(), companyWebsite.getHost()) <=
-                            editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost()) &&
+                    if ((companyName.equals(companyName.toLowerCase()) ||
+                            editDistance.apply(pageTitle.toLowerCase(), companyWebsite.getHost()) <=
+                            editDistance.apply(companyName.toLowerCase(), companyWebsite.getHost())) &&
                             !pageTitle.contains("("))
                     {
                         companyName = pageTitle;
