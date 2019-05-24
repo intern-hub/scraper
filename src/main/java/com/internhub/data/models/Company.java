@@ -13,7 +13,7 @@ public class Company {
     private String name;
     @Column(name = "website")
     private String website;
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
     @Column(name = "popularity")
     private int popularity;
