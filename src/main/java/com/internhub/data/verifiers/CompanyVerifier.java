@@ -128,7 +128,10 @@ public class CompanyVerifier {
             String page = m_wiki.getTextExtract(pageTitle);
             String fullPage = m_wiki.getPageText(pageTitle);
             String pageLower = page.toLowerCase();
-            if (fullPage.contains("{{Infobox") && pageLower.contains("company")) {
+            if (fullPage.contains("{{Infobox") &&
+                    pageLower.contains("company") &&
+                    pageTitle.toLowerCase().contains(companyName.toLowerCase()))
+            {
                 int score = bonusScore;
                 if (pageLower.contains(companyName.toLowerCase())) {
                     score += 100;
