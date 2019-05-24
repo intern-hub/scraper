@@ -122,7 +122,7 @@ public class RedditCompanyScraper implements CompanyScraper {
 
                         // Use Wikipedia to search for company descriptions
                         // Prioritize technology and financial company pages
-                        String companyDescription = "";
+                        String companyDescription = "No description could be found for this company.";
                         int descriptionScore = -1;
                         for (String pageTitle : m_wiki.search(companyName + " company", 3)) {
                             String page = m_wiki.getTextExtract(pageTitle);
