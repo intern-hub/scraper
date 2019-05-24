@@ -16,6 +16,10 @@ public class CompanyVerifier {
     private static final String WIKI_SEARCH_TERM = "%s company";
     private static final int MAX_WIKI_PAGES = 4;
 
+    private static final String[] BANNED_WORDS = {
+            "decacorn", "unicorn", "defense", "government"
+    };
+
     private GoogleSearch m_google;
     private Map<String, URL> m_searchCache;
     private Wiki m_wiki;
@@ -54,9 +58,10 @@ public class CompanyVerifier {
         }
 
         // Throw out some obvious 'companies' that are getting by the Google process
-        if (companyName.toLowerCase().contains("decacorn") ||
-                companyName.toLowerCase().contains("unicorn")) {
-            return false;
+        for (String banned : BANNED_WORDS) {
+            if (companyName.toLowerCase().contains(banned)) {
+                return false;
+            }
         }
 
         return true;
