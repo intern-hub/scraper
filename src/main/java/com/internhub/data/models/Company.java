@@ -8,7 +8,7 @@ public class Company {
     @Id
     @GeneratedValue
     @Column(name = "id")
-    private long id;
+    private Long id;
     @Column(name = "name")
     private String name;
     @Column(name = "website")
@@ -16,13 +16,13 @@ public class Company {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
     @Column(name = "popularity")
-    private int popularity;
+    private Integer popularity;
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -50,11 +50,11 @@ public class Company {
         this.description = description;
     }
 
-    public int getPopularity() {
+    public Integer getPopularity() {
         return popularity;
     }
 
-    public void setPopularity(int popularity) {
+    public void setPopularity(Integer popularity) {
         this.popularity = popularity;
     }
 }

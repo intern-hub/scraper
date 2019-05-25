@@ -8,7 +8,7 @@ public class Position {
     @GeneratedValue
     @Id
     @Column(name = "id")
-    private long id;
+    private Long id;
     @Column(name = "link")
     private String link;
     @ManyToOne
@@ -20,14 +20,18 @@ public class Position {
     @Enumerated(EnumType.ORDINAL)
     private Season season;
     @Column(name = "year")
-    private int year;
+    private Integer year;
     @Column(name = "degree")
     private String degree;
     @Column(name = "location")
     private String location;
 
-    public long getId() {
+    public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getLink() {
@@ -62,11 +66,11 @@ public class Position {
         this.season = season;
     }
 
-    public int getYear() {
+    public Integer getYear() {
         return year;
     }
 
-    public void setYear(int year) {
+    public void setYear(Integer year) {
         this.year = year;
     }
 
