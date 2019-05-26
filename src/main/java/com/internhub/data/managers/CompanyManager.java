@@ -26,7 +26,9 @@ public class CompanyManager {
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
-            results.addAll(session.createQuery("from Company", Company.class).list());
+            Query<Company> query = session.createQuery("from Company where name = :name", Company.class);
+            query.setParameter("name", "Nvidia");
+            results.addAll(query.list());
             tx.commit();
         } catch (HibernateException he) {
             if (tx != null)
