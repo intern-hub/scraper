@@ -10,10 +10,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,7 @@ public class DefaultPositionScraper implements PositionScraper {
     private static final int MAX_ENTRY_LINKS = 4;
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
+    private static final int MAX_IFRAME_WAIT = 3;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPositionScraper.class);
 
@@ -43,7 +47,6 @@ public class DefaultPositionScraper implements PositionScraper {
                 "--incognito",
                 "--no-sandbox",
                 "--disable-extensions",
-                "--dns-prefetch-disable",
                 "--disable-gpu",
                 "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64 " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
@@ -133,7 +136,13 @@ public class DefaultPositionScraper implements PositionScraper {
             List<WebElement> iframes = m_driver.findElements(By.tagName("iframe"));
             List<Elements> iframeBodies = new ArrayList<>();
             for (WebElement iframe : iframes) {
-                m_driver.switchTo().frame(iframe);
+                try {
+                    WebDriverWait wait = new WebDriverWait(m_driver, MAX_IFRAME_WAIT);
+                    wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(iframe));
+                } catch (TimeoutException timeout) {
+                    logger.error("Unable to switch to iframe " + iframe + ".", timeout);
+                    continue;
+                }
                 Document iframeHTML = Jsoup.parse(m_driver.getPageSource());
                 Elements iframeBody = fixHTMLBody(iframeHTML.select("body"));
                 iframeBodies.add(iframeBody);
