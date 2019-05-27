@@ -26,7 +26,7 @@ public class CompanyManager {
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
-            Query<Company> query = session.createQuery("from Company", Company.class);
+            Query<Company> query = session.createQuery("from Company ORDER BY name", Company.class);
             results.addAll(query.list());
             tx.commit();
         } catch (HibernateException he) {
