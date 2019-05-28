@@ -97,7 +97,12 @@ public class DefaultPositionScraper implements PositionScraper {
                     numTotalLinks + 1, MAX_TOTAL_LINKS, currentLink, candidate.getDepth()));
 
             // Use Selenium to fetch the page and wait a bit for it to load
-            m_driver.get(currentLink);
+            try {
+                m_driver.get(currentLink);
+            } catch (TimeoutException ex) {
+                logger.error("Skipping page due to timeout issues.", ex);
+                continue;
+            }
             try {
                  Thread.sleep(PAGE_LOAD_DELAY);
             } catch (InterruptedException ex) {

@@ -42,6 +42,7 @@ public class PositionVerifier {
             for (String buttonKeyword : VALID_SUBMISSION_BUTTONS) {
                 if (shortenedText.contains(buttonKeyword)) {
                     score += 1;
+                    System.out.println("Apply button found");
                     break foundApplyButton;
                 }
             }
@@ -50,6 +51,7 @@ public class PositionVerifier {
         // Page must have a position title for it to be valid
         if (getPositionTitle(applicationLink, applicationPage) != null) {
             score += 1;
+            System.out.println("Position title found");
         }
 
         return score >= VALIDITY_THRESHOLD;
@@ -75,7 +77,9 @@ public class PositionVerifier {
                     }
                 }
             }
-            break;
+            // h1, h2s must always be searched
+            if (hid == 2)
+                break;
         }
 
         // Return null, indicating that no appropriate title was found

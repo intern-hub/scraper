@@ -9,7 +9,9 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CompanyManager {
     private static SessionFactory factory;
@@ -22,12 +24,19 @@ public class CompanyManager {
     // Get all of the companies that are saved in the SQL database
     public List<Company> selectAll() {
         List<Company> results = new ArrayList<>();
+        Map<Long, Long> ranking = new HashMap<>();
         Session session = factory.openSession();
         Transaction tx = null;
         try {
             tx = session.beginTransaction();
             Query<Company> query = session.createQuery("from Company ORDER BY name", Company.class);
             results.addAll(query.list());
+            // Count the number of positions attached to each company
+            for (Company company : results) {
+                Query countQuery = session.createQuery("select count(*) from Position WHERE company_id = :id");
+                countQuery.setParameter("id", company.getId());
+                ranking.put(company.getId(), (Long) countQuery.uniqueResult());
+            }
             tx.commit();
         } catch (HibernateException he) {
             if (tx != null)
@@ -36,6 +45,8 @@ public class CompanyManager {
         } finally {
             session.close();
         }
+        // Order companies first by number of positions attached to them, then alphabetically
+        results.sort((a, b) -> (int) (ranking.get(a.getId()) - ranking.get(b.getId())));
         return results;
     }
 
