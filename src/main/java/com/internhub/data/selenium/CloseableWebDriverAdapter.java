@@ -11,10 +11,15 @@ public class CloseableWebDriverAdapter implements AutoCloseable {
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
         options.addArguments(
+                "start-maximized",
+                "enable-automation",
                 "--incognito",
                 "--no-sandbox",
                 "--disable-extensions",
                 "--disable-gpu",
+                "--disable-infobars",
+                "--disable-dev-shm-usage",
+                "--disable-browser-side-navigation",
                 "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64 " +
                         "AppleWebKit/537.36 (KHTML, like Gecko) " +
                         "Chrome/70.0.3538.77 Safari/537.36"
