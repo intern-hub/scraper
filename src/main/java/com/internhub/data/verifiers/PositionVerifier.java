@@ -1,7 +1,10 @@
 package com.internhub.data.verifiers;
 
 import com.internhub.data.models.Season;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,8 +16,10 @@ public class PositionVerifier {
 
     private static List<String> VALID_SUBMISSION_BUTTONS;
 
+    private static final Logger logger = LoggerFactory.getLogger(PositionVerifier.class);
+
     static {
-        VALID_SUBMISSION_BUTTONS = Arrays.asList("apply", "start application", "submit");
+        VALID_SUBMISSION_BUTTONS = Arrays.asList("apply", "submit", "start application", "get started");
     }
 
     private Map<String, String> m_savedTitles;
@@ -28,12 +33,22 @@ public class PositionVerifier {
     public boolean isPositionValid(String applicationLink, Elements applicationPage)  {
         int score = 0;
 
+        // Isolate spans inside anchor elements and parse those first before removing them
+        List<String> linkTexts = new ArrayList<>();
+        Elements linksNoSpan = applicationPage.select("a > span");
+        for (Element span : linksNoSpan) {
+            if (span.text().chars().filter(Character::isWhitespace).count() <= 3) {
+                linkTexts.add(span.text());
+            }
+        }
+        linksNoSpan.remove();
+
         // Find all buttons in the page that have no more than 3 words in their text field
-        Elements links = applicationPage.select("a,button,a > span");
-        List<String> linkTexts = links.eachText()
+        Elements links = applicationPage.select("a,button");
+        linkTexts.addAll(links.eachText()
                 .stream()
                 .filter(text -> text.chars().filter(Character::isWhitespace).count() <= 3)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
         // Page must have an apply button for it to be valid
         foundApplyButton:
@@ -41,8 +56,8 @@ public class PositionVerifier {
             String shortenedText = linkText.trim().toLowerCase();
             for (String buttonKeyword : VALID_SUBMISSION_BUTTONS) {
                 if (shortenedText.contains(buttonKeyword)) {
+                    logger.info("Candidate apply button is \"" + linkText + "\".");
                     score += 1;
-                    System.out.println("Apply button found");
                     break foundApplyButton;
                 }
             }
@@ -50,8 +65,8 @@ public class PositionVerifier {
 
         // Page must have a position title for it to be valid
         if (getPositionTitle(applicationLink, applicationPage) != null) {
+            logger.info("Candidate position title is \"" + getPositionTitle(applicationLink, applicationPage) + "\".");
             score += 1;
-            System.out.println("Position title found");
         }
 
         return score >= VALIDITY_THRESHOLD;
@@ -62,14 +77,14 @@ public class PositionVerifier {
             return m_savedTitles.get(applicationLink);
         }
 
-        // Find the largest group of headers and only search those
-        for (int hid = 1; hid <= 6; hid++) {
+        // Search h1s and h2s for a title containing intern or internship
+        for (int hid = 1; hid <= 2; hid++) {
             List<String> titleList = applicationPage.select("h" + hid).eachText();
-            if (titleList.isEmpty()) {
-                continue;
-            }
             for (String title : titleList) {
-                String[] words = title.toLowerCase().split(" ");
+                String[] words = title.toLowerCase()
+                        .replace(",", " ")
+                        .replace("-", " ")
+                        .split(" ");
                 for (String word : words) {
                     if (word.equals("intern") || word.equals("internship")) {
                         m_savedTitles.put(applicationLink, title);
@@ -77,9 +92,6 @@ public class PositionVerifier {
                     }
                 }
             }
-            // h1, h2s must always be searched
-            if (hid == 2)
-                break;
         }
 
         // Return null, indicating that no appropriate title was found

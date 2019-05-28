@@ -50,6 +50,27 @@ public class CompanyManager {
         return results;
     }
 
+    // Return a list of companies that have the specified name
+    public List<Company> selectByName(String name) {
+        List<Company> results = new ArrayList<>();
+        Session session = factory.openSession();
+        Transaction tx = null;
+        try {
+            tx = session.beginTransaction();
+            Query<Company> query = session.createQuery("from Company WHERE name = :name", Company.class);
+            query.setParameter("name", name);
+            results.addAll(query.list());
+            tx.commit();
+        } catch (HibernateException he) {
+            if (tx != null)
+                tx.rollback();
+            he.printStackTrace();
+        } finally {
+            session.close();
+        }
+        return results;
+    }
+
     // For each new transient company object {$NAME, $WEBSITE}:
     // If a company doesn't exist in the database with $NAME, add it
     // Otherwise, update existing company object to have the same $WEBSITE

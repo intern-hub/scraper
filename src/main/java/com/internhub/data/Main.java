@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -77,12 +78,40 @@ public class Main {
         }
     }
 
+    private static void scrapePositions(String name) {
+        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
+            CompanyManager companyManager = new CompanyManager();
+            PositionManager positionManager = new PositionManager();
+            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
+            List<Company> companies = companyManager.selectByName(name);
+            if (companies.isEmpty()) {
+                logger.error(String.format("Company %s does not exist in the database.", name));
+            }
+            else {
+                Company company = companies.get(0);
+                try {
+                    positionManager.bulkUpdate(positionScraper.fetch(company));
+                } catch (MalformedURLException ex) {
+                    logger.error(
+                            String.format("Company %s (%d) has an invalid website: %s",
+                                    company.getName(),
+                                    company.getId(),
+                                    company.getWebsite()
+                            ),
+                            ex
+                    );
+                }
+            }
+        }
+    }
+
     public static void main(String[] args) {
         initChromeDriver();
 
         Options options = new Options();
         options.addOption("c", "companies",  false,"scrape companies & populate companies table");
         options.addOption("p", "positions", false,"scrape positions & populate positions table");
+        options.addOption("s", "specific", true,"scrape positions for a specified company");
         options.addOption("h", "help", false,"print help information");
 
         CommandLineParser parser = new DefaultParser();
@@ -98,6 +127,9 @@ public class Main {
             }
             if (line.hasOption("p")) {
                 scrapePositions();
+            }
+            if (line.hasOption("s")) {
+                scrapePositions(line.getOptionValue("s"));
             }
         } catch(ParseException exp) {
             throw new RuntimeException(exp);
