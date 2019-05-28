@@ -257,13 +257,16 @@ public class DefaultPositionScraper implements PositionScraper {
     }
 
     private Elements fixHTMLBody(Elements html) {
-        Elements header = html.select("header");
-        if (header != null) {
-            header.remove();
-        }
-        Elements footer = html.select("footer");
-        if (footer != null) {
-            footer.remove();
+        List<Elements> scrap = new ArrayList<>();
+        scrap.add(html.select("header"));
+        scrap.add(html.select("#header"));
+        scrap.add(html.select(".header"));
+        scrap.add(html.select("footer"));
+        scrap.add(html.select("#footer"));
+        scrap.add(html.select(".footer"));
+        for (Elements elements : scrap) {
+            if (elements != null)
+                elements.remove();
         }
         return html;
     }
@@ -285,6 +288,14 @@ public class DefaultPositionScraper implements PositionScraper {
         // Trim ending slash in link
         if (link.charAt(link.length() - 1) == '/') {
             link = link.substring(0, link.length() - 1);
+        }
+
+        // Remove query parameters and hashbang
+        if (link.contains("?")) {
+            link = link.split("?")[0];
+        }
+        if (link.contains("#")) {
+            link = link.split("#")[0];
         }
 
         return link.trim();

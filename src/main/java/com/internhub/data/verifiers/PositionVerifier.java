@@ -14,7 +14,7 @@ public class PositionVerifier {
     private static List<String> VALID_SUBMISSION_BUTTONS;
 
     static {
-        VALID_SUBMISSION_BUTTONS = Arrays.asList("apply", "start", "application", "submit");
+        VALID_SUBMISSION_BUTTONS = Arrays.asList("apply", "start application", "submit");
     }
 
     private Map<String, String> m_savedTitles;
@@ -60,9 +60,12 @@ public class PositionVerifier {
             return m_savedTitles.get(applicationLink);
         }
 
-        // Iterate over each header in the page, starting with the largest header
+        // Find the largest group of headers and only search those
         for (int hid = 1; hid <= 6; hid++) {
             List<String> titleList = applicationPage.select("h" + hid).eachText();
+            if (titleList.isEmpty()) {
+                continue;
+            }
             for (String title : titleList) {
                 String[] words = title.toLowerCase().split(" ");
                 for (String word : words) {
@@ -72,6 +75,7 @@ public class PositionVerifier {
                     }
                 }
             }
+            break;
         }
 
         // Return null, indicating that no appropriate title was found
