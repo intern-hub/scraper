@@ -71,7 +71,7 @@ public class PositionVerifier {
             for (String title : titleList) {
                 String[] words = title.toLowerCase().split(" ");
                 for (String word : words) {
-                    if (word.equals("intern")) {
+                    if (word.equals("intern") || word.equals("internship")) {
                         m_savedTitles.put(applicationLink, title);
                         return title;
                     }
