@@ -62,12 +62,9 @@ public class PositionVerifier {
             return m_savedTitles.get(applicationLink);
         }
 
-        // Find the largest group of headers and only search those
-        for (int hid = 1; hid <= 6; hid++) {
+        // Search h1s and h2s for a title containing intern or internship
+        for (int hid = 1; hid <= 2; hid++) {
             List<String> titleList = applicationPage.select("h" + hid).eachText();
-            if (titleList.isEmpty()) {
-                continue;
-            }
             for (String title : titleList) {
                 String[] words = title.toLowerCase().split(" ");
                 for (String word : words) {
@@ -77,9 +74,6 @@ public class PositionVerifier {
                     }
                 }
             }
-            // h1, h2s must always be searched
-            if (hid == 2)
-                break;
         }
 
         // Return null, indicating that no appropriate title was found
