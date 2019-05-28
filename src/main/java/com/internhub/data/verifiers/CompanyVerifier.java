@@ -17,7 +17,7 @@ public class CompanyVerifier {
     private static final int MAX_WIKI_PAGES = 4;
 
     private static final String[] BANNED_WORDS = {
-            "decacorn", "unicorn", "defense", "government"
+            "decacorn", "unicorn", "defense", "government", "military"
     };
 
     private GoogleSearch m_google;
