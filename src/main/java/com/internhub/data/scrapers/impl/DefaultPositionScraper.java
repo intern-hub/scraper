@@ -294,7 +294,7 @@ public class DefaultPositionScraper implements PositionScraper {
 
         // Remove query parameters and hashbang
         if (link.contains("?")) {
-            link = link.split("?")[0];
+            link = link.split("\\?")[0];
         }
         if (link.contains("#")) {
             link = link.split("#")[0];
