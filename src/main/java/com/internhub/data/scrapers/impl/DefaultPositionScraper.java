@@ -40,19 +40,8 @@ public class DefaultPositionScraper implements PositionScraper {
     private GoogleSearch m_google;
     private PositionVerifier m_verifier;
 
-    public DefaultPositionScraper() {
-        ChromeOptions options = new ChromeOptions();
-        options.setHeadless(true);
-        options.addArguments(
-                "--incognito",
-                "--no-sandbox",
-                "--disable-extensions",
-                "--disable-gpu",
-                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64 " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/70.0.3538.77 Safari/537.36"
-        );
-        this.m_driver = new ChromeDriver(options);
+    public DefaultPositionScraper(WebDriver m_driver) {
+        this.m_driver = m_driver;
         this.m_google = new GoogleSearch();
         this.m_verifier = new PositionVerifier();
     }
@@ -258,10 +247,8 @@ public class DefaultPositionScraper implements PositionScraper {
 
     private Elements fixHTMLBody(Elements html) {
         html = removeFromHTMLBody(html, "header");
-        html = removeFromHTMLBody(html, "#header");
-        html = removeFromHTMLBody(html, ".header");
+        html = removeFromHTMLBody(html, ".navigation");
         html = removeFromHTMLBody(html, "footer");
-        html = removeFromHTMLBody(html, "#footer");
         html = removeFromHTMLBody(html, ".footer");
         return html;
     }
