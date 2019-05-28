@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public class PositionVerifier {
     private static final int VALIDITY_THRESHOLD = 2;
-    // After May of a year, it is assumed all summer postings are for next year by default
-    private static final int CUTOFF_MONTH = 3;
+    // Starting August, companies will begin to update their positions for next summer
+    private static final int CUTOFF_MONTH = 7;
 
     private static List<String> VALID_SUBMISSION_BUTTONS;
 
