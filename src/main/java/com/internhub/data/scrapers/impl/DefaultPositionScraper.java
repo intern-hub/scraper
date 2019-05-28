@@ -257,17 +257,19 @@ public class DefaultPositionScraper implements PositionScraper {
     }
 
     private Elements fixHTMLBody(Elements html) {
-        List<Elements> scrap = new ArrayList<>();
-        scrap.add(html.select("header"));
-        scrap.add(html.select("#header"));
-        scrap.add(html.select(".header"));
-        scrap.add(html.select("footer"));
-        scrap.add(html.select("#footer"));
-        scrap.add(html.select(".footer"));
-        for (Elements elements : scrap) {
-            if (elements != null)
-                elements.remove();
-        }
+        html = removeFromHTMLBody(html, "header");
+        html = removeFromHTMLBody(html, "#header");
+        html = removeFromHTMLBody(html, ".header");
+        html = removeFromHTMLBody(html, "footer");
+        html = removeFromHTMLBody(html, "#footer");
+        html = removeFromHTMLBody(html, ".footer");
+        return html;
+    }
+
+    private Elements removeFromHTMLBody(Elements html, String query) {
+        Elements scrap = html.select(query);
+        if (scrap != null)
+            scrap.remove();
         return html;
     }
 
