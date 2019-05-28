@@ -8,8 +8,12 @@ import com.internhub.data.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.scrapers.impl.DefaultPositionScraper;
 import com.internhub.data.scrapers.PositionScraper;
 
+import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,21 +56,23 @@ public class Main {
     }
 
     private static void scrapePositions() {
-        CompanyManager companyManager = new CompanyManager();
-        PositionManager positionManager = new PositionManager();
-        PositionScraper positionScraper = new DefaultPositionScraper();
-        for (Company company : companyManager.selectAll()) {
-            try {
-                positionManager.bulkUpdate(positionScraper.fetch(company));
-            } catch (MalformedURLException ex) {
-                logger.error(
-                        String.format("Company %s (%d) has an invalid website: %s",
-                                company.getName(),
-                                company.getId(),
-                                company.getWebsite()
-                        ),
-                        ex
-                );
+        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
+            CompanyManager companyManager = new CompanyManager();
+            PositionManager positionManager = new PositionManager();
+            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
+            for (Company company : companyManager.selectAll()) {
+                try {
+                    positionManager.bulkUpdate(positionScraper.fetch(company));
+                } catch (MalformedURLException ex) {
+                    logger.error(
+                            String.format("Company %s (%d) has an invalid website: %s",
+                                    company.getName(),
+                                    company.getId(),
+                                    company.getWebsite()
+                            ),
+                            ex
+                    );
+                }
             }
         }
     }
