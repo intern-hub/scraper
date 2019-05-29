@@ -222,8 +222,12 @@ public class DefaultPositionScraper implements PositionScraper {
                             continue;
                         }
 
-                        // Don't bother with following links to images or PDFs
-                        if (childLink.endsWith(".pdf") || childLink.endsWith(".jpg") || childLink.endsWith(".png")) {
+                        // Don't bother with following links to files
+                        if (childLink.endsWith(".pdf") ||
+                                childLink.endsWith(".mp3") ||
+                                childLink.endsWith(".mp4") ||
+                                childLink.endsWith(".jpg") ||
+                                childLink.endsWith(".png")) {
                             continue;
                         }
 
