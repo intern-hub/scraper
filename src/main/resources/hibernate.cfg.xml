@@ -5,9 +5,9 @@
 <hibernate-configuration>
     <session-factory>
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
-        <property name="hibernate.connection.url">jdbc:mysql://acronym.cumbz8y4rove.us-west-1.rds.amazonaws.com:3306/acronym?serverTimezone=UTC</property>
+        <property name="hibernate.connection.url">jdbc:mysql://internhub.cmhwyhzh2tvl.us-west-1.rds.amazonaws.com:3306/internhub?serverTimezone=UTC</property>
+        <property name="hibernate.connection.username">acronym</property>
         <property name="hibernate.connection.password">Gary2019</property>
-        <property name="hibernate.connection.username">internhub</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MariaDB53Dialect</property>
         <property name="hibernate.hbm2ddl.auto">none</property>
         <property name="show_sql">false</property>
