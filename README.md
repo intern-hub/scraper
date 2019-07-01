@@ -1,7 +1,8 @@
 # scraper
 
 This repository contains our scraping code. 
-It pulls companies from /r/cscareerquestions and crawls the web for positions relating to those companies.
+It pulls companies from [/r/cscareerquestions](https://reddit.com/r/cscareerquestions) and crawls the web for positions 
+relating to those companies. We are also actively looking for other reliable sources of company names. 
 
 ## Installation
 
@@ -21,4 +22,4 @@ To fetch all companies and save them to the database, ignoring duplicates, use:
 
 To fetch all positions for each company in the database and then save them to the database, ignoring duplicates, use:
 
-`gradle run --args=-c`
+`gradle run --args=-p`
