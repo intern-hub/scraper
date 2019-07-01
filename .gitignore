@@ -42,3 +42,6 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
+# Ignore hibernate properties file (distributed manually)
+/src/main/resources/hibernate.cfg.xml
