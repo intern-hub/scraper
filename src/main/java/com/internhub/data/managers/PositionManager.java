@@ -22,9 +22,8 @@ public class PositionManager {
     // If position with $LINK exists, update existing position with $INFO.
     // Otherwise, add the entire position to the database
     public void bulkUpdate(List<Position> newPositions) {
-        Session session = factory.openSession();
         Transaction tx = null;
-        try {
+        try (Session session = factory.openSession()) {
             tx = session.beginTransaction();
             for (int i = 0; i < newPositions.size(); i++) {
                 Position newPosition = newPositions.get(i);
@@ -53,8 +52,6 @@ public class PositionManager {
             if (tx != null)
                 tx.rollback();
             he.printStackTrace();
-        } finally {
-            session.close();
         }
     }
 }
