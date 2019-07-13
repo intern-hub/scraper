@@ -34,14 +34,14 @@ public class DefaultPositionScraper implements PositionScraper {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPositionScraper.class);
 
-    private WebDriver m_driver;
-    private GoogleSearch m_google;
-    private PositionVerifier m_verifier;
+    private WebDriver mDriver;
+    private GoogleSearch mGoogle;
+    private PositionVerifier mVerifier;
 
-    public DefaultPositionScraper(WebDriver m_driver) {
-        this.m_driver = m_driver;
-        this.m_google = new GoogleSearch();
-        this.m_verifier = new PositionVerifier();
+    public DefaultPositionScraper(WebDriver driver) {
+        this.mDriver = driver;
+        this.mGoogle = new GoogleSearch();
+        this.mVerifier = new PositionVerifier();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class DefaultPositionScraper implements PositionScraper {
         // Start with the first ${MAX_ENTRY_LINKS} links that Google finds for the company
         try {
             String searchTerm = String.format(INTERNSHIP_SEARCH_TERM, companyName);
-            for (URL url : m_google.search(searchTerm, MAX_ENTRY_LINKS)) {
+            for (URL url : mGoogle.search(searchTerm, MAX_ENTRY_LINKS)) {
                 if (isInCompanyDomain(url, companyWebsite, companyAbbrev)) {
                     String link = fixLink(url.toString(), null, null);
                     frontier.add(new CandidatePosition(link, 1));
@@ -96,17 +96,16 @@ public class DefaultPositionScraper implements PositionScraper {
 
             // Use Selenium to fetch the page and wait a bit for it to load
             try {
-                m_driver.get(currentLink);
+                mDriver.get(currentLink);
+                Thread.sleep(PAGE_LOAD_DELAY);
             } catch (TimeoutException ex) {
                 logger.error("Skipping page due to timeout issues.", ex);
                 continue;
-            }
-            try {
-                 Thread.sleep(PAGE_LOAD_DELAY);
             } catch (InterruptedException ex) {
                 logger.error("Could not wait for page to load.", ex);
             }
-            String pageSource = m_driver.getPageSource();
+
+            String pageSource = mDriver.getPageSource();
 
             // Determine whether a page is explorable without parsing the HTML
             // by doing some primitive checks first
@@ -125,24 +124,24 @@ public class DefaultPositionScraper implements PositionScraper {
             Elements body = fixHTMLBody(document.select("body"));
 
             // Convert iframes to JSoup HTML elements
-            List<WebElement> iframes = m_driver.findElements(By.tagName("iframe"));
+            List<WebElement> iframes = mDriver.findElements(By.tagName("iframe"));
             List<Elements> iframeBodies = new ArrayList<>();
             for (WebElement iframe : iframes) {
                 try {
-                    WebDriverWait wait = new WebDriverWait(m_driver, MAX_IFRAME_WAIT);
+                    WebDriverWait wait = new WebDriverWait(mDriver, MAX_IFRAME_WAIT);
                     wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(iframe));
                 } catch (TimeoutException timeout) {
                     logger.error("Unable to switch to iframe " + iframe + ".", timeout);
                     continue;
                 }
-                Document iframeHTML = Jsoup.parse(m_driver.getPageSource());
+                Document iframeHTML = Jsoup.parse(mDriver.getPageSource());
                 Elements iframeBody = fixHTMLBody(iframeHTML.select("body"));
                 iframeBodies.add(iframeBody);
-                m_driver.switchTo().defaultContent();
+                mDriver.switchTo().defaultContent();
             }
 
             Elements verified = null;
-            if (m_verifier.isPositionValid(currentLink, body)) {
+            if (mVerifier.isPositionValid(currentLink, body)) {
                 // In many cases, we will just be able to verify the
                 // application from the initial page
                 verified = body;
@@ -151,7 +150,7 @@ public class DefaultPositionScraper implements PositionScraper {
                 // Otherwise, we check the iframes of the page to make sure
                 // we didn't miss a nested application view
                 for (Elements iframeBody : iframeBodies) {
-                    if (m_verifier.isPositionValid(currentLink, iframeBody)) {
+                    if (mVerifier.isPositionValid(currentLink, iframeBody)) {
                         verified = iframeBody;
                         break;
                     }
@@ -163,11 +162,11 @@ public class DefaultPositionScraper implements PositionScraper {
                 Position position = new Position();
                 position.setLink(currentLink);
                 position.setCompany(company);
-                position.setTitle(m_verifier.getPositionTitle(currentLink, verified));
-                position.setYear(m_verifier.getPositionYear(currentLink, verified));
-                position.setSeason(m_verifier.getPositionSeason(currentLink, verified));
-                position.setDegree(m_verifier.getPositionDegree(currentLink, verified));
-                position.setLocation(m_verifier.getPositionLocation(currentLink, verified));
+                position.setTitle(mVerifier.getPositionTitle(currentLink, verified));
+                position.setYear(mVerifier.getPositionYear(currentLink, verified));
+                position.setSeason(mVerifier.getPositionSeason(currentLink, verified));
+                position.setDegree(mVerifier.getPositionDegree(currentLink, verified));
+                position.setLocation(mVerifier.getPositionLocation(currentLink, verified));
                 results.add(position);
               
                 logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));

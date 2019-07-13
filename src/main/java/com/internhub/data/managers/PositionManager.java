@@ -7,6 +7,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
+import java.net.URL;
 import java.util.List;
 import org.hibernate.query.Query;
 
@@ -14,13 +15,20 @@ public class PositionManager {
     private static SessionFactory factory;
 
     static {
-        String config = PositionManager.class.getClassLoader().getResource("hibernate.cfg.xml").toExternalForm();
+        URL url = PositionManager.class.getClassLoader().getResource("hibernate.cfg.xml");
+
+        if(url == null) {
+            throw new SecurityException("Missing configuration file, are you permitted to use this application?");
+        }
+        String config = url.toExternalForm();
         factory = new Configuration().configure(config).buildSessionFactory();
     }
 
-    // For each new scraped, transient position object {$LINK, $INFO}:
-    // If position with $LINK exists, update existing position with $INFO.
-    // Otherwise, add the entire position to the database
+    //
+
+    /**
+     * Given a list of positions, either inserts position into db or updates existing position entry
+     */
     public void bulkUpdate(List<Position> newPositions) {
         Transaction tx = null;
         try (Session session = factory.openSession()) {
