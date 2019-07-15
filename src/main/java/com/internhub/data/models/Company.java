@@ -1,10 +1,17 @@
 package com.internhub.data.models;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.persistence.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 @Entity
 @Table(name = "companies")
 public class Company {
+    private static final Logger logger = LoggerFactory.getLogger(Company.class);
+
     @Id
     @GeneratedValue
     @Column(name = "id")
@@ -30,12 +37,29 @@ public class Company {
         return name;
     }
 
+    public String getAbbreviation() {
+        return name.toLowerCase()
+                .replace(" ", "")
+                .replace(".", "")
+                .replace("&", "");
+    }
+
     public void setName(String name) {
         this.name = name;
     }
 
     public String getWebsite() {
         return website;
+    }
+
+    public URL getWebsiteURL() {
+        try {
+            return new URL(website);
+        } catch (MalformedURLException e) {
+            logger.error(String.format("Company %s (%d) has an invalid website: %s",
+                    getName(), getId(), getWebsite()), e);
+            return null;
+        }
     }
 
     public void setWebsite(String website) {

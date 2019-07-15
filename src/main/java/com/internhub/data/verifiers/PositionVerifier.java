@@ -1,5 +1,7 @@
 package com.internhub.data.verifiers;
 
+import com.internhub.data.models.Company;
+import com.internhub.data.models.Position;
 import com.internhub.data.models.Season;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -30,7 +32,7 @@ public class PositionVerifier {
         this.m_savedSeasons = new HashMap<>();
     }
 
-    public boolean isPositionValid(String applicationLink, Elements applicationPage)  {
+    public boolean isPositionValid(String applicationLink, Elements applicationPage) {
         int score = 0;
 
         // Isolate spans inside anchor elements and parse those first before removing them
@@ -100,8 +102,7 @@ public class PositionVerifier {
     }
 
 
-
-    public int getPositionYear(String applicationLink, Elements applicationPage) { 
+    public int getPositionYear(String applicationLink, Elements applicationPage) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         int nextYear = currentYear + 1;
 
@@ -119,7 +120,7 @@ public class PositionVerifier {
         List<String> years = Arrays.asList(String.valueOf(nextYear), String.valueOf(currentYear));
         for (String area : informationAreas) {
             List<String> words = Arrays.asList(area.split(" "));
-            for(String year : years) {
+            for (String year : years) {
                 for (int i = 0; i < words.size(); i++) {
                     if (words.get(i).equals(year)) {
                         // Check immediate next word for mention of a season
@@ -132,8 +133,8 @@ public class PositionVerifier {
                         }
                         // Check immediate previous word for mention of a season
                         if (i >= 1) {
-                           String previous = words.get(i - 1).toLowerCase();
-                           Season previousSeason = Season.getSeasonFromLowercaseName(previous);
+                            String previous = words.get(i - 1).toLowerCase();
+                            Season previousSeason = Season.getSeasonFromLowercaseName(previous);
                             if (previousSeason != null) {
                                 m_savedSeasons.put(applicationLink, previousSeason);
                             }
@@ -162,14 +163,11 @@ public class PositionVerifier {
         String pageText = applicationPage.text().trim().toLowerCase();
         if (pageText.contains("summer")) {
             season = Season.SUMMER;
-        }
-        else if (pageText.contains("fall")) {
+        } else if (pageText.contains("fall")) {
             season = Season.FALL;
-        }
-        else if (pageText.contains("winter")) {
+        } else if (pageText.contains("winter")) {
             season = Season.WINTER;
-        }
-        else if (pageText.contains("spring")) {
+        } else if (pageText.contains("spring")) {
             season = Season.SPRING;
         }
 
@@ -181,26 +179,42 @@ public class PositionVerifier {
         String pageText = applicationPage.text().trim().toLowerCase();
         if (pageText.contains("bachelor’s") || pageText.contains("bs")) {
             return "BS";
-        }
-        else if (pageText.contains("master's") || pageText.contains("ms")) {
+        } else if (pageText.contains("master's") || pageText.contains("ms")) {
             return "MS";
-        }
-        else if (pageText.contains("phd")) {
+        } else if (pageText.contains("phd")) {
             return "PhD";
         }
         return "BS";
     }
 
-    public String getPositionLocation(String applicationLink, Elements applicationPage) { 
+    public String getPositionLocation(String applicationLink, Elements applicationPage) {
         String pageText = applicationPage.text().trim().toLowerCase();
         String[] words = pageText.split(" ");
         for (int i = 0; i < words.length; i++) {
             if (words[i].contains("location")) {
-                if ((i+1) < words.length) {
-                    return words[i+1].replaceAll("[^a-zA-Z ]", "");
+                if ((i + 1) < words.length) {
+                    return words[i + 1].replaceAll("[^a-zA-Z ]", "");
                 }
             }
         }
         return "";
+    }
+
+    /**
+     * @param company             Current company the scraper is analyzing
+     * @param currentLink         Current link the scraper is analyzing
+     * @param applicationElements The relevant parts of the page that may have the necessary application info
+     * @return Position created from applicationElements
+     */
+    public Position getPosition(Company company, String currentLink, Elements applicationElements) {
+        Position position = new Position();
+        position.setLink(currentLink);
+        position.setCompany(company);
+        position.setTitle(getPositionTitle(currentLink, applicationElements));
+        position.setYear(getPositionYear(currentLink, applicationElements));
+        position.setSeason(getPositionSeason(currentLink, applicationElements));
+        position.setDegree(getPositionDegree(currentLink, applicationElements));
+        position.setLocation(getPositionLocation(currentLink, applicationElements));
+        return position;
     }
 }

@@ -4,6 +4,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -11,6 +13,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -22,21 +25,30 @@ public class GoogleSearch {
     private static final int PAUSE_DELAY_MIN = 1000;
     private static final int PAUSE_DELAY_MAX = 3000;
 
+    private static final Logger logger = LoggerFactory.getLogger(GoogleSearch.class);
     private Random random;
 
     public GoogleSearch() {
         this.random = new Random();
     }
 
-    public List<URL> search(String query, int count) throws IOException {
+    public List<URL> search(String query, int count) {
+        try {
+            return search0(query, count);
+        } catch (IOException e) {
+            logger.error(String.format("Search failed on query %s with count %s.", query, count), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<URL> search0(String query, int count) throws IOException {
         List<URL> links = new ArrayList<>();
 
         // Encode the query into a URL-friendly string
         String encodedQuery;
         try {
             encodedQuery = URLEncoder.encode(query, "UTF-8");
-        }
-        catch (UnsupportedEncodingException ex) {
+        } catch (UnsupportedEncodingException ex) {
             // Will never happen, UTF-8 is always a valid encoding
             throw new RuntimeException(ex);
         }
@@ -52,9 +64,9 @@ public class GoogleSearch {
         // Find subsections within the search area that actually contain results
         List<Elements> specificAreas = new ArrayList<>();
         for (Element element : searchArea.select("h2")) {
-           if (element.text().contains("Web")) {
-              specificAreas.add(element.parent().select("a[href]"));
-           }
+            if (element.text().contains("Web")) {
+                specificAreas.add(element.parent().select("a[href]"));
+            }
         }
 
         // Find all anchors within the search areas and add them
@@ -77,8 +89,7 @@ public class GoogleSearch {
         // This is done to fool Google into thinking we are more of a human actor than not
         try {
             Thread.sleep(PAUSE_DELAY_MIN + random.nextInt(PAUSE_DELAY_MAX - PAUSE_DELAY_MIN + 1));
-        }
-        catch (InterruptedException ex) {
+        } catch (InterruptedException ex) {
             // Not that important, can be ignored
         }
 

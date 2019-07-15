@@ -7,5 +7,5 @@ import java.net.MalformedURLException;
 import java.util.List;
 
 public interface PositionScraper {
-    List<Position> fetch(Company company) throws MalformedURLException;
+    List<Position> fetch(Company company);
 }

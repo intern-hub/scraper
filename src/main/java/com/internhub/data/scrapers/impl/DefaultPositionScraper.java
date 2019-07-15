@@ -1,25 +1,18 @@
 package com.internhub.data.scrapers.impl;
 
+import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
+import com.internhub.data.scrapers.Page;
+import com.internhub.data.scrapers.PageScraper;
 import com.internhub.data.scrapers.PositionScraper;
+import com.internhub.data.scrapers.ScraperUtils;
 import com.internhub.data.search.GoogleSearch;
-import com.internhub.data.verifiers.PositionVerifier;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -27,272 +20,119 @@ public class DefaultPositionScraper implements PositionScraper {
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";
 
     private static final int MAX_DEPTH = 4;
-    private static final int MAX_ENTRY_LINKS = 4;
+    private static final int TOP_N_GOOGLE_LINKS = 4;
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
-    private static final int MAX_IFRAME_WAIT = 3;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPositionScraper.class);
 
     private WebDriver mDriver;
     private GoogleSearch mGoogle;
-    private PositionVerifier mVerifier;
 
     public DefaultPositionScraper(WebDriver driver) {
         this.mDriver = driver;
         this.mGoogle = new GoogleSearch();
-        this.mVerifier = new PositionVerifier();
     }
 
     @Override
-    public List<Position> fetch(Company company) throws MalformedURLException {
-        // This information about the company will come in handy later
-        String companyName = company.getName();
-        String companyAbbrev = companyName.toLowerCase()
-                .replace(" ", "")
-                .replace(".", "")
-                .replace("&", "");
-        URL companyWebsite = new URL(company.getWebsite());
-
+    public List<Position> fetch(Company company) {
         // Create priority queue used to determine which links to crawl first
-        List<Position> results = new ArrayList<>();
-        PriorityQueue<CandidatePosition> frontier = new PriorityQueue<>(new CandidateHeuristicComparator());
+        List<Position> results = Lists.newArrayList();
+        PriorityQueue<CandidatePosition> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>();
 
-        // Start with the first ${MAX_ENTRY_LINKS} links that Google finds for the company
-        try {
-            String searchTerm = String.format(INTERNSHIP_SEARCH_TERM, companyName);
-            for (URL url : mGoogle.search(searchTerm, MAX_ENTRY_LINKS)) {
-                if (isInCompanyDomain(url, companyWebsite, companyAbbrev)) {
-                    String link = fixLink(url.toString(), null, null);
-                    frontier.add(new CandidatePosition(link, 1));
-                    visited.add(link);
-                }
-            }
-        } catch (IOException ex) {
-            logger.error("Initial search failed.", ex);
-        }
+        // start by adding google results, then analyzing each link
+        addGoogleResults(company, candidates, visited);
 
+        // cap number of links to analyze
         int numTotalLinks = 0;
-        while (!frontier.isEmpty() && numTotalLinks < MAX_TOTAL_LINKS) {
-            // Pop our best candidate off of the frontier
-            CandidatePosition candidate = frontier.remove();
-
-            // Convert the link to a URL representation so we can
-            // extract the base of the link (e.g. <scheme>://<host>)
+        while (!candidates.isEmpty() && numTotalLinks < MAX_TOTAL_LINKS) {
+            // Get our best candidate
+            CandidatePosition candidate = candidates.remove();
             String currentLink = candidate.getLink();
-            URL currentURL;
-            try {
-                currentURL = new URL(currentLink);
-            } catch (MalformedURLException ex) {
-                logger.error(currentLink + " is malformed.", ex);
-                continue;
-            }
-            String currentBase = currentURL.getProtocol() + "://" + currentURL.getHost();
 
             logger.info(String.format(
                     "[%d/%d] Visiting %s (depth = %d) ...",
                     numTotalLinks + 1, MAX_TOTAL_LINKS, currentLink, candidate.getDepth()));
 
-            // Use Selenium to fetch the page and wait a bit for it to load
-            try {
-                mDriver.get(currentLink);
-                Thread.sleep(PAGE_LOAD_DELAY);
-            } catch (TimeoutException ex) {
-                logger.error("Skipping page due to timeout issues.", ex);
-                continue;
-            } catch (InterruptedException ex) {
-                logger.error("Could not wait for page to load.", ex);
-            }
+            // Get page with selenium
+            Page page = getPage(currentLink);
 
-            String pageSource = mDriver.getPageSource();
+            // Scrape page
+            PageScraper scraper = new PageScraper();
+            PageScraper.PageScrapeResult result = scraper.scrapePage(page, company);
 
-            // Determine whether a page is explorable without parsing the HTML
-            // by doing some primitive checks first
-            String pageSourceLower = pageSource.toLowerCase();
-            boolean explorable = false;
-            for (String keyword : new String[] { "career", "job", "intern"}) {
-                if (pageSourceLower.contains(keyword)) {
-                    explorable = true;
-                    break;
-                }
-            }
-            if (!explorable)
-                continue;
+            // Diagnostics on result position
+            Position position = result.position;
+            reportPosition(position, numTotalLinks);
 
-            Document document = Jsoup.parse(pageSource);
-            Elements body = fixHTMLBody(document.select("body"));
-
-            // Convert iframes to JSoup HTML elements
-            List<WebElement> iframes = mDriver.findElements(By.tagName("iframe"));
-            List<Elements> iframeBodies = new ArrayList<>();
-            for (WebElement iframe : iframes) {
-                try {
-                    WebDriverWait wait = new WebDriverWait(mDriver, MAX_IFRAME_WAIT);
-                    wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(iframe));
-                } catch (TimeoutException timeout) {
-                    logger.error("Unable to switch to iframe " + iframe + ".", timeout);
-                    continue;
-                }
-                Document iframeHTML = Jsoup.parse(mDriver.getPageSource());
-                Elements iframeBody = fixHTMLBody(iframeHTML.select("body"));
-                iframeBodies.add(iframeBody);
-                mDriver.switchTo().defaultContent();
-            }
-
-            Elements verified = null;
-            if (mVerifier.isPositionValid(currentLink, body)) {
-                // In many cases, we will just be able to verify the
-                // application from the initial page
-                verified = body;
-            }
-            else {
-                // Otherwise, we check the iframes of the page to make sure
-                // we didn't miss a nested application view
-                for (Elements iframeBody : iframeBodies) {
-                    if (mVerifier.isPositionValid(currentLink, iframeBody)) {
-                        verified = iframeBody;
-                        break;
-                    }
-                }
-            }
-            if (verified != null) {
-                // If the link was able to be verified, then the verifier will have
-                // data regarding the link (e.g position title, etc.)
-                Position position = new Position();
-                position.setLink(currentLink);
-                position.setCompany(company);
-                position.setTitle(mVerifier.getPositionTitle(currentLink, verified));
-                position.setYear(mVerifier.getPositionYear(currentLink, verified));
-                position.setSeason(mVerifier.getPositionSeason(currentLink, verified));
-                position.setDegree(mVerifier.getPositionDegree(currentLink, verified));
-                position.setLocation(mVerifier.getPositionLocation(currentLink, verified));
-                results.add(position);
-              
-                logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
-                logger.info(String.format("[%d/%d] Title is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getTitle()));
-                logger.info(String.format("[%d/%d] Season & year is %s %d.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
-                logger.info(String.format("[%d/%d] Location is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getLocation()));
-                logger.info(String.format("[%d/%d] Minimum degree is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getDegree()));
-            }
-            else {
-                logger.info(String.format("[%d/%d] Skipping. Not a valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
-            }
-
+            // only add more links if we haven't reached max depth yet
             if (candidate.getDepth() < MAX_DEPTH) {
-                // Collect links from all page bodies including those of iframes
-                List<Elements> anchorBundles = new ArrayList<>();
-                anchorBundles.add(body.select("a[href]"));
-                for (Elements iframeBody : iframeBodies) {
-                    anchorBundles.add(iframeBody.select("a[href]"));
-                }
-
-                for (Elements anchors : anchorBundles) {
-                    for (Element anchor : anchors) {
-                        String childLink = anchor.attr("href");
-
-                        // Throw out links that aren't actually valid
-                        if (childLink == null || childLink.length() <= 2 ||
-                                childLink.charAt(0) == '#' || childLink.startsWith("javascript:void") ||
-                                childLink.startsWith("mailto")) {
-                            continue;
-                        }
-
-                        // Fix relative paths, etc.
-                        childLink = fixLink(childLink, currentLink, currentBase);
-
-                        // Make sure that the link can be transposed to a valid URL
-                        URL childURL;
-                        try {
-                            childURL = new URL(childLink);
-                        } catch (MalformedURLException ex) {
-                            continue;
-                        }
-
-                        // Make sure we are either in the company's career website OR
-                        // we are on a job listings board
-                        if (!isInCompanyDomain(childURL, companyWebsite, companyAbbrev) &&
-                                !childURL.getHost().contains("taleo") &&
-                                !childURL.getHost().contains("jobvite") &&
-                                !childURL.getHost().contains("workday") &&
-                                !childURL.getHost().contains("greenhouse") &&
-                                !childURL.getHost().contains("icims"))
-                        {
-                            continue;
-                        }
-
-                        // Don't bother with following links to files
-                        if (childLink.endsWith(".pdf") ||
-                                childLink.endsWith(".mp3") ||
-                                childLink.endsWith(".mp4") ||
-                                childLink.endsWith(".jpg") ||
-                                childLink.endsWith(".png")) {
-                            continue;
-                        }
-
-                        // Ignore links that have already been visited
-                        if (visited.contains(childLink)) {
-                            continue;
-                        }
-
-                        frontier.add(new CandidatePosition(childLink, candidate.getDepth() + 1));
-                        visited.add(childLink);
+                Collection<String> nextPositions = result.nextPositions;
+                for (String link : nextPositions) {
+                    if (visited.contains(link)) {
+                        continue;
                     }
+                    candidates.add(new CandidatePosition(link, candidate.getDepth() + 1));
+                    visited.add(link);
                 }
             }
-
             numTotalLinks++;
         }
-
         return results;
     }
 
-    private boolean isInCompanyDomain(URL url, URL companyURL, String companyAbbrev) {
-        return url.getHost().equals(companyURL.getHost()) || url.getHost().contains(companyAbbrev);
+    /**
+     * Returns a processed page with all necessary information describing a web page
+     */
+    private Page getPage(String link) {
+        // Use Selenium to fetch the page and wait a bit for it to load
+        try {
+            mDriver.get(link);
+            Thread.sleep(PAGE_LOAD_DELAY);
+        } catch (TimeoutException ex) {
+            logger.error("Skipping page due to timeout issues.", ex);
+            return null;
+        } catch (InterruptedException ex) {
+            logger.error("Could not wait for page to load.", ex);
+            return null;
+        }
+
+        Page page = new Page(mDriver.getPageSource(), link);
+        page.process(mDriver);
+        return page;
     }
 
-    private Elements fixHTMLBody(Elements html) {
-        html = removeFromHTMLBody(html, "header");
-        html = removeFromHTMLBody(html, ".navigation");
-        html = removeFromHTMLBody(html, "footer");
-        html = removeFromHTMLBody(html, ".footer");
-        return html;
+
+    /**
+     * Add google results to list (number of results depends on TOP_N_GOOGLE_LINKS). Marks links visited as well.
+     * <p>
+     * // TODO refactor
+     */
+    private void addGoogleResults(Company company, Collection<CandidatePosition> candidates, Set<String> visited) {
+        // Start by finding TOP_N_GOOGLE_LINKS links that Google finds for the company and adding to list
+        String searchTerm = String.format(INTERNSHIP_SEARCH_TERM, company.getName());
+        for (URL url : mGoogle.search(searchTerm, TOP_N_GOOGLE_LINKS)) {
+            if (ScraperUtils.isInCompanyDomain(url, company.getWebsiteURL(), company.getAbbreviation())) {
+                String link = ScraperUtils.fixLink(url.toString());
+                candidates.add(new CandidatePosition(link, 1));
+                visited.add(link);
+            }
+        }
     }
 
-    private Elements removeFromHTMLBody(Elements html, String query) {
-        Elements scrap = html.select(query);
-        if (scrap != null)
-            scrap.remove();
-        return html;
-    }
-
-    private String fixLink(String link, String parent, String parentBase) {
-        // Fix relative links
-        if (link.charAt(0) == '/') {
-            link = parentBase + link;
+    /**
+     * Logs info about found position
+     */
+    private void reportPosition(Position position, int numTotalLinks) {
+        if (position != null) {
+            logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
+            logger.info(String.format("[%d/%d] Title is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getTitle()));
+            logger.info(String.format("[%d/%d] Season & year is %s %d.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
+            logger.info(String.format("[%d/%d] Location is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getLocation()));
+            logger.info(String.format("[%d/%d] Minimum degree is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getDegree()));
+        } else {
+            logger.info(String.format("[%d/%d] Unable to find position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
         }
-        if (link.charAt(0) == '.') {
-           if (parent.charAt(parent.length() - 1) == '/') {
-               link = parent + link;
-           }
-           else {
-               link = parent + '/' + link;
-           }
-        }
-
-        // Trim ending slash in link
-        if (link.charAt(link.length() - 1) == '/') {
-            link = link.substring(0, link.length() - 1);
-        }
-
-        // Remove query parameters and hashbang
-        if (link.contains("?")) {
-            link = link.split("\\?")[0];
-        }
-        if (link.contains("#")) {
-            link = link.split("#")[0];
-        }
-
-        return link.trim();
     }
 }
