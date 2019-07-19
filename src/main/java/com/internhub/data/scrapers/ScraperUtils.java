@@ -22,16 +22,18 @@ public class ScraperUtils {
     public static Elements removeFromHTMLBody(Elements html, String... queries) {
         for (String query : queries) {
             Elements scrap = html.select(query);
-            if (scrap != null)
+            if (scrap != null) {
                 scrap.remove();
+            }
         }
         return html;
     }
 
     public static String getBase(String link) {
         URL url = makeURL(link);
-        if (url == null)
+        if (url == null) {
             return null;
+        }
         return url.getProtocol() + "://" + url.getHost();
     }
 
@@ -39,7 +41,7 @@ public class ScraperUtils {
         try {
             return new URL(link);
         } catch (MalformedURLException ex) {
-            logger.info(String.format("Link %s is malformed", link));
+            logger.info(String.format("Link '%s' is malformed", link));
             return null;
         }
     }
