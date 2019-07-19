@@ -3,11 +3,14 @@ package com.internhub.data;
 import com.internhub.data.managers.CompanyManager;
 import com.internhub.data.managers.PositionManager;
 import com.internhub.data.models.Company;
+import com.internhub.data.models.Position;
 import com.internhub.data.scrapers.CompanyScraper;
+import com.internhub.data.scrapers.MTScraper;
 import com.internhub.data.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.scrapers.impl.DefaultPositionScraper;
 import com.internhub.data.scrapers.PositionScraper;
 
+import com.internhub.data.scrapers.impl.mt.MTPositionScraper;
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
@@ -54,29 +57,25 @@ public class Main {
     }
 
     private static void scrapePositions() {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            for (Company company : companyManager.selectAll()) {
-                positionManager.bulkUpdate(positionScraper.fetch(company));
-            }
-        }
+        CompanyManager companyManager = new CompanyManager();
+        List<Company> companies = companyManager.selectAll();
+        scrapePositions0(companies);
     }
 
-    private static void scrapePositions(String name) {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            List<Company> companies = companyManager.selectByName(name);
-            if (companies.isEmpty()) {
-                logger.error(String.format("Company %s does not exist in the database.", name));
-            } else {
-                Company company = companies.get(0);
-                positionManager.bulkUpdate(positionScraper.fetch(company));
-            }
+    private static void scrapePositions(String companyName) {
+        CompanyManager companyManager = new CompanyManager();
+        List<Company> companies = companyManager.selectByName(companyName);
+        if (companies.isEmpty()) {
+            logger.error(String.format("Company %s does not exist in the database.", companyName));
+            return;
         }
+        scrapePositions0(companies);
+    }
+
+    private static void scrapePositions0(List<Company> companies) {
+        MTScraper scraper = new MTPositionScraper();
+        scraper.load(companies);
+        scraper.scrape();
     }
 
     public static void main(String[] args) {

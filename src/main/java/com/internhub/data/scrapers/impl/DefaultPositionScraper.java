@@ -21,7 +21,7 @@ public class DefaultPositionScraper implements PositionScraper {
 
     private static final int MAX_DEPTH = 4;
     private static final int TOP_N_GOOGLE_LINKS = 4;
-    private static final int MAX_TOTAL_LINKS = 100;
+    private static final int MAX_TOTAL_LINKS = 20;
     private static final int PAGE_LOAD_DELAY = 2000;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPositionScraper.class);
@@ -64,7 +64,7 @@ public class DefaultPositionScraper implements PositionScraper {
 
             // Diagnostics on result position
             Position position = result.position;
-            reportPosition(position, numTotalLinks);
+            handlePosition(position, results, numTotalLinks);
 
             // only add more links if we haven't reached max depth yet
             if (candidate.getDepth() < MAX_DEPTH) {
@@ -122,10 +122,11 @@ public class DefaultPositionScraper implements PositionScraper {
     }
 
     /**
-     * Logs info about found position
+     * Handles position result
      */
-    private void reportPosition(Position position, int numTotalLinks) {
+    private void handlePosition(Position position, List<Position> results, int numTotalLinks) {
         if (position != null) {
+            results.add(position);
             logger.info(String.format("[%d/%d] Identified valid position.", numTotalLinks + 1, MAX_TOTAL_LINKS));
             logger.info(String.format("[%d/%d] Title is %s.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getTitle()));
             logger.info(String.format("[%d/%d] Season & year is %s %d.", numTotalLinks + 1, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
