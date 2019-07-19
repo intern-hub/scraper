@@ -24,24 +24,21 @@ import java.util.List;
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static void initChromeDriver() {
+    static void initChromeDriver() {
         // Determine which Chrome driver file to use
         String driverName;
         if (OS.isFamilyWindows()) {
             driverName = "chromedriver.exe";
-        }
-        else if (OS.isFamilyMac()) {
+        } else if (OS.isFamilyMac()) {
             driverName = "chromedriver";
-        }
-        else if (OS.isFamilyUnix()) {
+        } else if (OS.isFamilyUnix()) {
             driverName = "chromedriver_linux";
-        }
-        else {
+        } else {
             throw new RuntimeException("Unsupported OS detected.");
         }
 
         // Convert the driver file name to a path in our resources folder
-        URL driver =  Main.class.getClassLoader().getResource(driverName);
+        URL driver = Main.class.getClassLoader().getResource(driverName);
         if (driver == null) {
             throw new RuntimeException("Unable to find path to " + driverName + ".");
         }
@@ -62,18 +59,7 @@ public class Main {
             PositionManager positionManager = new PositionManager();
             PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
             for (Company company : companyManager.selectAll()) {
-                try {
-                    positionManager.bulkUpdate(positionScraper.fetch(company));
-                } catch (MalformedURLException ex) {
-                    logger.error(
-                            String.format("Company %s (%d) has an invalid website: %s",
-                                    company.getName(),
-                                    company.getId(),
-                                    company.getWebsite()
-                            ),
-                            ex
-                    );
-                }
+                positionManager.bulkUpdate(positionScraper.fetch(company));
             }
         }
     }
@@ -86,21 +72,9 @@ public class Main {
             List<Company> companies = companyManager.selectByName(name);
             if (companies.isEmpty()) {
                 logger.error(String.format("Company %s does not exist in the database.", name));
-            }
-            else {
+            } else {
                 Company company = companies.get(0);
-                try {
-                    positionManager.bulkUpdate(positionScraper.fetch(company));
-                } catch (MalformedURLException ex) {
-                    logger.error(
-                            String.format("Company %s (%d) has an invalid website: %s",
-                                    company.getName(),
-                                    company.getId(),
-                                    company.getWebsite()
-                            ),
-                            ex
-                    );
-                }
+                positionManager.bulkUpdate(positionScraper.fetch(company));
             }
         }
     }
@@ -109,10 +83,10 @@ public class Main {
         initChromeDriver();
 
         Options options = new Options();
-        options.addOption("c", "companies",  false,"scrape companies & populate companies table");
-        options.addOption("p", "positions", false,"scrape positions & populate positions table");
-        options.addOption("s", "specific", true,"scrape positions for a specified company");
-        options.addOption("h", "help", false,"print help information");
+        options.addOption("c", "companies", false, "scrape companies & populate companies table");
+        options.addOption("p", "positions", false, "scrape positions & populate positions table");
+        options.addOption("s", "specific", true, "scrape positions for a specified company");
+        options.addOption("h", "help", false, "print help information");
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -131,7 +105,7 @@ public class Main {
             if (line.hasOption("s")) {
                 scrapePositions(line.getOptionValue("s"));
             }
-        } catch(ParseException exp) {
+        } catch (ParseException exp) {
             throw new RuntimeException(exp);
         }
     }

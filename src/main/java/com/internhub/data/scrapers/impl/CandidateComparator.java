@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CandidateHeuristicComparator implements Comparator<CandidatePosition> {
+public class CandidateComparator implements Comparator<CandidatePosition> {
     private static final Map<String, Integer> TAGS;
 
     static {
