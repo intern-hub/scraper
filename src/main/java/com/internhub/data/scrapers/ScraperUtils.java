@@ -39,7 +39,7 @@ public class ScraperUtils {
         try {
             return new URL(link);
         } catch (MalformedURLException ex) {
-            logger.error(link + " is malformed.", ex);
+            // logger.error(link + " is malformed.", ex);
             return null;
         }
     }
