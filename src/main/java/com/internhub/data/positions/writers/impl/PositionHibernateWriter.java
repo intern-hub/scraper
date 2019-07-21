@@ -1,33 +1,23 @@
-package com.internhub.data.positions.writers;
+package com.internhub.data.positions.writers.impl;
 
 import com.internhub.data.models.Position;
+import com.internhub.data.positions.writers.PositionWriter;
+import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.cfg.Configuration;
 
-import java.net.URL;
 import java.util.List;
 import org.hibernate.query.Query;
 
-public class PositionHibernateWriter {
-    private static SessionFactory factory;
-
-    static {
-        URL url = PositionHibernateWriter.class.getClassLoader().getResource("hibernate.cfg.xml");
-
-        if(url == null) {
-            throw new SecurityException("Missing configuration file, are you permitted to use this application?");
-        }
-        String config = url.toExternalForm();
-        factory = new Configuration().configure(config).buildSessionFactory();
-    }
+public class PositionHibernateWriter implements PositionWriter {
+    private static SessionFactory factory = HibernateUtils.buildSession();
 
     /**
      * Given a list of positions, either inserts position into db or updates existing position entry
      */
-    public void bulkUpdate(List<Position> newPositions) {
+    public void save(List<Position> newPositions) {
         Transaction tx = null;
         try (Session session = factory.openSession()) {
             tx = session.beginTransaction();
