@@ -1,4 +1,4 @@
-package com.internhub.data.verifiers;
+package com.internhub.data.positions.verifiers;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;

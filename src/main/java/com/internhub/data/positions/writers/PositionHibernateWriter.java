@@ -1,4 +1,4 @@
-package com.internhub.data.managers;
+package com.internhub.data.positions.writers;
 
 import com.internhub.data.models.Position;
 import org.hibernate.HibernateException;
@@ -11,11 +11,11 @@ import java.net.URL;
 import java.util.List;
 import org.hibernate.query.Query;
 
-public class PositionManager {
+public class PositionHibernateWriter {
     private static SessionFactory factory;
 
     static {
-        URL url = PositionManager.class.getClassLoader().getResource("hibernate.cfg.xml");
+        URL url = PositionHibernateWriter.class.getClassLoader().getResource("hibernate.cfg.xml");
 
         if(url == null) {
             throw new SecurityException("Missing configuration file, are you permitted to use this application?");
@@ -23,8 +23,6 @@ public class PositionManager {
         String config = url.toExternalForm();
         factory = new Configuration().configure(config).buildSessionFactory();
     }
-
-    //
 
     /**
      * Given a list of positions, either inserts position into db or updates existing position entry

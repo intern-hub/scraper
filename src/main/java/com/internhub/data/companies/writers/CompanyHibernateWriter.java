@@ -1,4 +1,4 @@
-package com.internhub.data.managers;
+package com.internhub.data.companies.writers;
 
 import com.internhub.data.models.Company;
 import org.hibernate.HibernateException;
@@ -14,11 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CompanyManager {
+public class CompanyHibernateWriter {
     private static SessionFactory factory;
 
     static {
-        URL url = CompanyManager.class.getClassLoader().getResource("hibernate.cfg.xml");
+        URL url = CompanyHibernateWriter.class.getClassLoader().getResource("hibernate.cfg.xml");
         if(url == null) {
             throw new SecurityException("Missing configuration file, are you permitted to use this application?");
         }

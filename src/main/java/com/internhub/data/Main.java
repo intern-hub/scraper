@@ -1,23 +1,19 @@
 package com.internhub.data;
 
-import com.internhub.data.managers.CompanyManager;
-import com.internhub.data.managers.PositionManager;
+import com.internhub.data.companies.writers.CompanyHibernateWriter;
+import com.internhub.data.positions.writers.PositionHibernateWriter;
 import com.internhub.data.models.Company;
-import com.internhub.data.scrapers.CompanyScraper;
-import com.internhub.data.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.scrapers.impl.DefaultPositionScraper;
-import com.internhub.data.scrapers.PositionScraper;
+import com.internhub.data.companies.scrapers.CompanyScraper;
+import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
+import com.internhub.data.positions.scrapers.impl.DepthAwarePositionScraper;
+import com.internhub.data.positions.scrapers.PositionScraper;
 
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
@@ -48,33 +44,33 @@ public class Main {
     }
 
     private static void scrapeCompanies() {
-        CompanyManager companyManager = new CompanyManager();
+        CompanyHibernateWriter companyHibernateWriter = new CompanyHibernateWriter();
         CompanyScraper companyScraper = new RedditCompanyScraper();
-        companyManager.bulkUpdate(companyScraper.fetch());
+        companyHibernateWriter.bulkUpdate(companyScraper.fetch());
     }
 
     private static void scrapePositions() {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            for (Company company : companyManager.selectAll()) {
-                positionManager.bulkUpdate(positionScraper.fetch(company));
+            CompanyHibernateWriter companyHibernateWriter = new CompanyHibernateWriter();
+            PositionHibernateWriter positionHibernateWriter = new PositionHibernateWriter();
+            PositionScraper positionScraper = new DepthAwarePositionScraper(driverAdapter.getDriver());
+            for (Company company : companyHibernateWriter.selectAll()) {
+                positionHibernateWriter.bulkUpdate(positionScraper.fetch(company));
             }
         }
     }
 
     private static void scrapePositions(String name) {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            List<Company> companies = companyManager.selectByName(name);
+            CompanyHibernateWriter companyHibernateWriter = new CompanyHibernateWriter();
+            PositionHibernateWriter positionHibernateWriter = new PositionHibernateWriter();
+            PositionScraper positionScraper = new DepthAwarePositionScraper(driverAdapter.getDriver());
+            List<Company> companies = companyHibernateWriter.selectByName(name);
             if (companies.isEmpty()) {
                 logger.error(String.format("Company %s does not exist in the database.", name));
             } else {
                 Company company = companies.get(0);
-                positionManager.bulkUpdate(positionScraper.fetch(company));
+                positionHibernateWriter.bulkUpdate(positionScraper.fetch(company));
             }
         }
     }

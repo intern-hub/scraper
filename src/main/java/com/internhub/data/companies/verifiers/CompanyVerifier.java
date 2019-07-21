@@ -1,4 +1,4 @@
-package com.internhub.data.verifiers;
+package com.internhub.data.companies.verifiers;
 
 import com.internhub.data.search.GoogleSearch;
 import fastily.jwiki.core.Wiki;

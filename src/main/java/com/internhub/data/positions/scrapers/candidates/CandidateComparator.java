@@ -1,10 +1,10 @@
-package com.internhub.data.scrapers.impl;
+package com.internhub.data.positions.scrapers.candidates;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CandidateComparator implements Comparator<CandidatePosition> {
+public class CandidateComparator<C extends QueuedCandidate> implements Comparator<C> {
     private static final Map<String, Integer> TAGS;
 
     static {
@@ -25,11 +25,11 @@ public class CandidateComparator implements Comparator<CandidatePosition> {
     }
 
     @Override
-    public int compare(CandidatePosition c1, CandidatePosition c2) {
+    public int compare(C c1, C c2) {
         return heuristic(c2) - heuristic(c1);
     }
 
-    private int heuristic(CandidatePosition candidate) {
+    private int heuristic(C candidate) {
         int score = 0;
         String llink = candidate.getLink().toLowerCase();
         for (Map.Entry<String, Integer> entry : TAGS.entrySet()) {
