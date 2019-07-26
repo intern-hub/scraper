@@ -32,23 +32,23 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
     @Override
     public List<Position> fetchWithInitialLinks(Company company, List<String> initialLinks) {
         List<Position> results = Lists.newArrayList();
-        PriorityQueue<ShallowCandidate> candidates = new PriorityQueue<>(new ShallowCandidateComparator<>());
+        PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>(initialLinks);
 
         candidates.addAll(initialLinks.stream()
-                .map((link) -> new ShallowCandidate(link, 1))
+                .map((link) -> new Candidate(link, 1))
                 .collect(Collectors.toList()));
 
         int totalLinks = 0;
 
         while (!candidates.isEmpty() && totalLinks < MAX_TOTAL_LINKS) {
-            ShallowCandidate candidate = candidates.poll();
+            Candidate candidate = candidates.poll();
 
             logger.info(String.format(
                     "[%d/%d] Visiting %s (depth = %d) ...",
-                    totalLinks + 1, MAX_TOTAL_LINKS, candidate.getLink(), candidate.getDepth()));
+                    totalLinks + 1, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
 
-            Page page = getPage(candidate.getLink());
+            Page page = getPage(candidate.link);
             PositionExtractor.ExtractionResult extraction = mPositionExtractor.scrapePage(page, company);
 
             totalLinks++;
@@ -58,10 +58,10 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
                 results.add(extraction.position);
             }
 
-            if (candidate.getDepth() < MAX_DEPTH) {
+            if (candidate.depth < MAX_DEPTH) {
                 candidates.addAll(extraction.nextPositions.stream()
                         .filter((link) -> !visited.contains(link))
-                        .map((link) -> new ShallowCandidate(link, candidate.getDepth() + 1))
+                        .map((link) -> new Candidate(link, candidate.depth + 1))
                         .collect(Collectors.toList()));
             }
         }
@@ -103,5 +103,52 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
         } else {
             logger.info(String.format("[%d/%d] Unable to find position.", totalLinks, MAX_TOTAL_LINKS));
         }
+    }
+}
+
+class Candidate {
+    final String link;
+    final int depth;
+
+    Candidate(String link, int depth) {
+        this.link = link;
+        this.depth = depth;
+    }
+}
+
+class CandidateComparator implements Comparator<Candidate> {
+    private static final Map<String, Integer> TAGS;
+
+    static {
+        TAGS = new HashMap<>();
+        TAGS.put("intern", 40);
+        TAGS.put("career", 12);
+        TAGS.put("job", 8);
+        TAGS.put("student", 2);
+        TAGS.put("university", 2);
+        TAGS.put("software", 1);
+        TAGS.put("hardware", 1);
+        TAGS.put("engineer", 1);
+        TAGS.put("greenhouse", 1);
+        TAGS.put("workday", 1);
+        TAGS.put("taleo", 1);
+        TAGS.put("jobvite", 1);
+        TAGS.put("icims", 1);
+    }
+
+    @Override
+    public int compare(Candidate c1, Candidate c2) {
+        return heuristic(c2) - heuristic(c1);
+    }
+
+    private int heuristic(Candidate candidate) {
+        int score = 0;
+        String llink = candidate.link.toLowerCase();
+        for (Map.Entry<String, Integer> entry : TAGS.entrySet()) {
+            if (llink.contains(entry.getKey())) {
+                score += entry.getValue();
+            }
+        }
+        return score;
     }
 }

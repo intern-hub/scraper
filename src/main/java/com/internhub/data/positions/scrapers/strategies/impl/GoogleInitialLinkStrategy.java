@@ -21,7 +21,7 @@ public class GoogleInitialLinkStrategy implements InitialLinkStrategy {
 
     @Override
     public List<String> fetchInitialLinks(Company company) {
-        // Start by finding TOP_N_GOOGLE_LINKS links that Google finds for the company and adding to list
+        // Take the first TOP_N_GOOGLE_LINKS links that Google finds for the company
         List<String> googled = Lists.newArrayList();
         String searchTerm = String.format(INTERNSHIP_SEARCH_TERM, company.getName());
         for (URL url : mGoogle.search(searchTerm, TOP_N_GOOGLE_LINKS)) {
