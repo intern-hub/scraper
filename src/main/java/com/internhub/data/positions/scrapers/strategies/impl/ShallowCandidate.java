@@ -1,4 +1,4 @@
-package com.internhub.data.positions.scrapers.shallow;
+package com.internhub.data.positions.scrapers.strategies.impl;
 
 public class ShallowCandidate {
     private final String mLink;

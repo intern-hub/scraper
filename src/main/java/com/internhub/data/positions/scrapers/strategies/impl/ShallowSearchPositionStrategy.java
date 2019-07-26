@@ -1,11 +1,11 @@
-package com.internhub.data.positions.scrapers.shallow;
+package com.internhub.data.positions.scrapers.strategies.impl;
 
 import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
-import com.internhub.data.positions.scrapers.GooglePositionScraper;
+import com.internhub.data.positions.scrapers.strategies.SearchPositionStrategy;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -14,23 +14,23 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ShallowPositionScraper extends GooglePositionScraper {
+public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
     private static final int MAX_DEPTH = 4;
     private static final int MAX_TOTAL_LINKS = 100;
     private static final int PAGE_LOAD_DELAY = 2000;
 
-    private static final Logger logger = LoggerFactory.getLogger(ShallowPositionScraper.class);
+    private static final Logger logger = LoggerFactory.getLogger(ShallowSearchPositionStrategy.class);
 
     private WebDriver mDriver;
     private PositionExtractor mPositionExtractor;
 
-    public ShallowPositionScraper(WebDriver driver) {
+    public ShallowSearchPositionStrategy(WebDriver driver) {
         mDriver = driver;
         mPositionExtractor = new PositionExtractor();
     }
 
     @Override
-    protected List<Position> fetchWithInitialLinks(Company company, List<String> initialLinks) {
+    public List<Position> fetchWithInitialLinks(Company company, List<String> initialLinks) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<ShallowCandidate> candidates = new PriorityQueue<>(new ShallowCandidateComparator<>());
         Set<String> visited = new HashSet<>(initialLinks);

@@ -1,4 +1,4 @@
-package com.internhub.data.positions.scrapers.shallow;
+package com.internhub.data.positions.scrapers.strategies.impl;
 
 import java.util.Comparator;
 import java.util.HashMap;

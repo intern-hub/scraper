@@ -4,12 +4,14 @@ import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.CompanyWriter;
+import com.internhub.data.positions.scrapers.SearchPositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.writers.PositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.companies.scrapers.CompanyScraper;
 import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.positions.scrapers.shallow.ShallowPositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.ShallowSearchPositionStrategy;
 import com.internhub.data.positions.scrapers.PositionScraper;
 
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
@@ -57,7 +59,9 @@ public class Main {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
             CompanyReader companyReader = new CompanyHibernateReader();
             PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new ShallowPositionScraper(driverAdapter.getDriver());
+            PositionScraper positionScraper = new SearchPositionScraper(
+                    new GoogleInitialLinkStrategy(),
+                    new ShallowSearchPositionStrategy(driverAdapter.getDriver()));
             for (Company company : companyReader.getAll()) {
                 positionWriter.save(positionScraper.fetch(company));
             }
@@ -68,7 +72,9 @@ public class Main {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
             CompanyReader companyReader = new CompanyHibernateReader();
             PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new ShallowPositionScraper(driverAdapter.getDriver());
+            PositionScraper positionScraper = new SearchPositionScraper(
+                    new GoogleInitialLinkStrategy(),
+                    new ShallowSearchPositionStrategy(driverAdapter.getDriver()));
             List<Company> companies = companyReader.getByName(name);
             if (companies.isEmpty()) {
                 logger.error(String.format("Company %s does not exist in the database.", name));
