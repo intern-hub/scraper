@@ -56,30 +56,29 @@ public class Main {
     }
 
     private static void scrapePositions() {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyReader companyReader = new CompanyHibernateReader();
-            PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new SearchPositionScraper(
-                    new GoogleInitialLinkStrategy(),
-                    new ShallowSearchPositionStrategy(driverAdapter.getDriver()));
-            for (Company company : companyReader.getAll()) {
-                positionWriter.save(positionScraper.fetch(company));
-            }
-        }
+        CompanyReader companyReader = new CompanyHibernateReader();
+        scrapePositions(companyReader.getAll());
     }
 
     private static void scrapePositions(String name) {
+        CompanyReader companyReader = new CompanyHibernateReader();
+        List<Company> companies = companyReader.getByName(name);
+        if (companies.isEmpty()) {
+            logger.error(String.format("Unable to find a company by the name of %s.", name));
+        } else {
+            assert(companies.size() == 1);
+            scrapePositions(companies);
+        }
+    }
+
+    private static void scrapePositions(List<Company> companies) {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyReader companyReader = new CompanyHibernateReader();
             PositionWriter positionWriter = new PositionHibernateWriter();
             PositionScraper positionScraper = new SearchPositionScraper(
                     new GoogleInitialLinkStrategy(),
                     new ShallowSearchPositionStrategy(driverAdapter.getDriver()));
-            List<Company> companies = companyReader.getByName(name);
-            if (companies.isEmpty()) {
-                logger.error(String.format("Company %s does not exist in the database.", name));
-            } else {
-                positionWriter.save(positionScraper.fetch(companies.get(0)));
+            for (Company company : companies) {
+                positionWriter.save(positionScraper.fetch(company));
             }
         }
     }
