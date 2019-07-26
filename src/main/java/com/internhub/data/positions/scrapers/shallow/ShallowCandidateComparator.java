@@ -1,10 +1,10 @@
-package com.internhub.data.positions.scrapers.candidates;
+package com.internhub.data.positions.scrapers.shallow;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CandidateComparator<C extends QueuedCandidate> implements Comparator<C> {
+public class ShallowCandidateComparator<C extends ShallowCandidate> implements Comparator<C> {
     private static final Map<String, Integer> TAGS;
 
     static {

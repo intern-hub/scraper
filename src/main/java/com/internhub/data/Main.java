@@ -2,14 +2,14 @@ package com.internhub.data;
 
 import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
-import com.internhub.data.companies.writers.CompanyHibernateWriter;
+import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.CompanyWriter;
 import com.internhub.data.positions.writers.PositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.companies.scrapers.CompanyScraper;
 import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.positions.scrapers.impl.DepthAwarePositionScraper;
+import com.internhub.data.positions.scrapers.shallow.ShallowPositionScraper;
 import com.internhub.data.positions.scrapers.PositionScraper;
 
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
@@ -57,7 +57,7 @@ public class Main {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
             CompanyReader companyReader = new CompanyHibernateReader();
             PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new DepthAwarePositionScraper(driverAdapter.getDriver());
+            PositionScraper positionScraper = new ShallowPositionScraper(driverAdapter.getDriver());
             for (Company company : companyReader.getAll()) {
                 positionWriter.save(positionScraper.fetch(company));
             }
@@ -68,7 +68,7 @@ public class Main {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
             CompanyReader companyReader = new CompanyHibernateReader();
             PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new DepthAwarePositionScraper(driverAdapter.getDriver());
+            PositionScraper positionScraper = new ShallowPositionScraper(driverAdapter.getDriver());
             List<Company> companies = companyReader.getByName(name);
             if (companies.isEmpty()) {
                 logger.error(String.format("Company %s does not exist in the database.", name));

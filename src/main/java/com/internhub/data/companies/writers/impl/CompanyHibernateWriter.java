@@ -1,5 +1,6 @@
-package com.internhub.data.companies.writers;
+package com.internhub.data.companies.writers.impl;
 
+import com.internhub.data.companies.writers.CompanyWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
@@ -13,7 +14,7 @@ import java.util.List;
 public class CompanyHibernateWriter implements CompanyWriter {
     private static SessionFactory factory = HibernateUtils.buildSession();
 
-    // For each new transient company object {$NAME, $WEBSITE}:
+    // For each company object:
     // If a company doesn't exist in the database with $NAME, add it
     // Otherwise, update existing company object to have the same $WEBSITE
     @Override
