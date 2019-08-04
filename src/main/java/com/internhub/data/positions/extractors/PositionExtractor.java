@@ -29,9 +29,9 @@ public class PositionExtractor {
         mVerifier = new PositionVerifier();
     }
 
-    public ExtractionResult scrapePage(Page page, Company company) {
+    public ExtractionResult extract(Page page, Company company) {
         ExtractionResult ret = new ExtractionResult();
-        if (!isPageValid(page)) {
+        if (!isValidPage(page)) {
             return ret;
         }
 
@@ -62,7 +62,7 @@ public class PositionExtractor {
 
         // Couldn't find anything, bail
         if(element == null) {
-            return null;
+            return new Position();
         }
 
         // Get the correct information from the position and return it
@@ -100,7 +100,7 @@ public class PositionExtractor {
         return ret;
     }
 
-    private boolean isPageValid(Page page) {
+    private boolean isValidPage(Page page) {
         String pageSource = page.getSource().toLowerCase();
         for (String keyword : new String[]{"career", "job", "intern"}) {
             if (pageSource.contains(keyword)) {

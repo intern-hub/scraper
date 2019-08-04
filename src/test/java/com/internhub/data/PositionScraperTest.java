@@ -1,8 +1,10 @@
 package com.internhub.data;
 
 import com.internhub.data.models.Company;
-import com.internhub.data.scrapers.PositionScraper;
-import com.internhub.data.scrapers.impl.DefaultPositionScraper;
+import com.internhub.data.positions.scrapers.IPositionScraper;
+import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,12 +19,13 @@ public class PositionScraperTest {
     @Test
     public void testPositionScraper() {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-
+            IPositionScraper IPositionScraper = new PositionScraper(
+                    new GoogleInitialLinkStrategy(),
+                    new PositionBFSStrategy(driverAdapter.getDriver()));
             Company google = new Company();
-            google.setName("Google");
-            google.setWebsite("https://google.com");
-            positionScraper.fetch(google);
+            google.setName("Amazon");
+            google.setWebsite("https://amazon.com");
+            IPositionScraper.fetch(google);
         }
     }
 }

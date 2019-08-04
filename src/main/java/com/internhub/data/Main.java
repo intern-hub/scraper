@@ -4,15 +4,15 @@ import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.CompanyWriter;
-import com.internhub.data.positions.scrapers.SearchPositionScraper;
+import com.internhub.data.positions.scrapers.PositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.writers.PositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.companies.scrapers.CompanyScraper;
 import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.positions.scrapers.strategies.impl.ShallowSearchPositionStrategy;
-import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
+import com.internhub.data.positions.scrapers.IPositionScraper;
 
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.apache.commons.cli.*;
@@ -74,11 +74,11 @@ public class Main {
     private static void scrapePositions(List<Company> companies) {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
             PositionWriter positionWriter = new PositionHibernateWriter();
-            PositionScraper positionScraper = new SearchPositionScraper(
+            IPositionScraper IPositionScraper = new PositionScraper(
                     new GoogleInitialLinkStrategy(),
-                    new ShallowSearchPositionStrategy(driverAdapter.getDriver()));
+                    new PositionBFSStrategy(driverAdapter.getDriver()));
             for (Company company : companies) {
-                positionWriter.save(positionScraper.fetch(company));
+                positionWriter.save(IPositionScraper.fetch(company));
             }
         }
     }
@@ -95,6 +95,7 @@ public class Main {
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine line = parser.parse(options, args);
+
             if (line.hasOption("h")) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("gradle run --args=", options, true);

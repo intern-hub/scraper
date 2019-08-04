@@ -5,32 +5,28 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
-import com.internhub.data.positions.scrapers.strategies.SearchPositionStrategy;
+import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
+public class PositionBFSStrategy implements IPositionScraperStrategy {
     private static final int MAX_DEPTH = 4;
     private static final int MAX_TOTAL_LINKS = 100;
-    private static final int PAGE_LOAD_DELAY = 2000;
-
-    private static final Logger logger = LoggerFactory.getLogger(ShallowSearchPositionStrategy.class);
+    private static final int PAGE_LOAD_DELAY_MS = 2000;
 
     private WebDriver mDriver;
     private PositionExtractor mPositionExtractor;
 
-    public ShallowSearchPositionStrategy(WebDriver driver) {
+    public PositionBFSStrategy(WebDriver driver) {
         mDriver = driver;
         mPositionExtractor = new PositionExtractor();
     }
 
     @Override
-    public List<Position> fetchWithInitialLinks(Company company, List<String> initialLinks) {
+    public List<Position> fetch(Company company, List<String> initialLinks) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>(initialLinks);
@@ -43,16 +39,17 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
 
         while (!candidates.isEmpty() && totalLinks < MAX_TOTAL_LINKS) {
             Candidate candidate = candidates.poll();
+            visited.add(candidate.link);
 
             logger.info(String.format(
                     "[%d/%d] Visiting %s (depth = %d) ...",
                     totalLinks + 1, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
 
             Page page = getPage(candidate.link);
-            PositionExtractor.ExtractionResult extraction = mPositionExtractor.scrapePage(page, company);
+            PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
-            totalLinks++;
-            reportPosition(extraction.position, totalLinks);
+            ++totalLinks;
+            logPosition(extraction.position, candidate.link);
 
             if (extraction.position != null) {
                 results.add(extraction.position);
@@ -76,7 +73,7 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
         // Use Selenium to fetch the page and wait a bit for it to load
         try {
             mDriver.get(link);
-            Thread.sleep(PAGE_LOAD_DELAY);
+            Thread.sleep(PAGE_LOAD_DELAY_MS);
         } catch (TimeoutException ex) {
             logger.error("Skipping page due to timeout issues.", ex);
             return null;
@@ -93,15 +90,15 @@ public class ShallowSearchPositionStrategy implements SearchPositionStrategy  {
     /**
      * Logs info about found position
      */
-    private void reportPosition(Position position, int totalLinks) {
+    private void logPosition(Position position, String link) {
         if (position != null) {
-            logger.info(String.format("[%d/%d] Identified valid position.", totalLinks, MAX_TOTAL_LINKS));
-            logger.info(String.format("[%d/%d] Title is %s.", totalLinks, MAX_TOTAL_LINKS, position.getTitle()));
-            logger.info(String.format("[%d/%d] Season & year is %s %d.", totalLinks, MAX_TOTAL_LINKS, position.getSeason(), position.getYear()));
-            logger.info(String.format("[%d/%d] Location is %s.", totalLinks, MAX_TOTAL_LINKS, position.getLocation()));
-            logger.info(String.format("[%d/%d] Minimum degree is %s.", totalLinks, MAX_TOTAL_LINKS, position.getDegree()));
+            logger.info(String.format("Identified valid position at %s.", link));
+            logger.info(String.format("Title is %s.", position.getTitle()));
+            logger.info(String.format("Season & year is %s %d.", position.getSeason(), position.getYear()));
+            logger.info(String.format("Location is %s.", position.getLocation()));
+            logger.info(String.format("Minimum degree is %s.", position.getDegree()));
         } else {
-            logger.info(String.format("[%d/%d] Unable to find position.", totalLinks, MAX_TOTAL_LINKS));
+            logger.info(String.format("Unable to find position at %s.", link));
         }
     }
 }
