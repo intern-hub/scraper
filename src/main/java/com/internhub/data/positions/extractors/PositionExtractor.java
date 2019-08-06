@@ -62,7 +62,7 @@ public class PositionExtractor {
 
         // Couldn't find anything, bail
         if(element == null) {
-            return new Position();
+            return null;
         }
 
         // Get the correct information from the position and return it

@@ -5,9 +5,6 @@ import com.internhub.data.models.Company;
 import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
 import com.internhub.data.search.GoogleSearch;
 import com.internhub.data.util.ScraperUtils;
-import com.sun.org.apache.xml.internal.security.Init;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.*;
