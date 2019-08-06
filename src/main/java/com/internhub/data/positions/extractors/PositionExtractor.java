@@ -1,10 +1,12 @@
-package com.internhub.data.scrapers;
+package com.internhub.data.positions.extractors;
 
 
 import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.verifiers.PositionVerifier;
+import com.internhub.data.pages.Page;
+import com.internhub.data.positions.verifiers.PositionVerifier;
+import com.internhub.data.util.ScraperUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -15,20 +17,20 @@ import java.util.List;
 import java.util.Set;
 
 
-public class PageScraper {
-    public class PageScrapeResult {
+public class PositionExtractor {
+    public class ExtractionResult {
         public Position position;
         public Collection<String> nextPositions = Lists.newArrayList();
     }
 
     private PositionVerifier mVerifier;
 
-    public PageScraper() {
+    public PositionExtractor() {
         mVerifier = new PositionVerifier();
     }
 
-    public PageScrapeResult scrapePage(Page page, Company company) {
-        PageScrapeResult ret = new PageScrapeResult();
+    public ExtractionResult extract(Page page, Company company) {
+        ExtractionResult ret = new ExtractionResult();
         if (!isValidPage(page)) {
             return ret;
         }
@@ -37,16 +39,6 @@ public class PageScraper {
         ret.nextPositions = tryGetNextPositions(page, company);
 
         return ret;
-    }
-
-    private boolean isValidPage(Page page) {
-        String pageSource = page.getSource().toLowerCase();
-        for (String keyword : new String[]{"career", "job", "intern"}) {
-            if (pageSource.contains(keyword)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Position tryGetPosition(Page page, Company company) {
@@ -97,8 +89,8 @@ public class PageScraper {
                 // Fix relative paths, etc.
                 childLink = ScraperUtils.fixLink(childLink, page.getLink());
 
-                // Make sure that the link can be transposed to a valid URL
-                URL childURL = ScraperUtils.makeURL(childLink);
+                // Make sure that the link can be turned into a valid URL
+                URL childURL = ScraperUtils.makeURL(childLink, false);
                 if (childURL == null || !isAppLinkValid(childURL, company)) {
                     continue;
                 }
@@ -108,6 +100,15 @@ public class PageScraper {
         return ret;
     }
 
+    private boolean isValidPage(Page page) {
+        String pageSource = page.getSource().toLowerCase();
+        for (String keyword : new String[]{"career", "job", "intern"}) {
+            if (pageSource.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * Returns if an application url is valid to look at
      */

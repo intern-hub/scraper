@@ -1,34 +1,25 @@
-package com.internhub.data.managers;
+package com.internhub.data.companies.readers.impl;
 
+import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.models.Company;
+import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CompanyManager {
-    private static SessionFactory factory;
-
-    static {
-        URL url = CompanyManager.class.getClassLoader().getResource("hibernate.cfg.xml");
-        if(url == null) {
-            throw new SecurityException("Missing configuration file, are you permitted to use this application?");
-        }
-
-        String config = url.toExternalForm();
-        factory = new Configuration().configure(config).buildSessionFactory();
-    }
+public class CompanyHibernateReader implements CompanyReader {
+    private static SessionFactory factory = HibernateUtils.buildSession();
 
     // Get all of the companies that are saved in the SQL database
-    public List<Company> selectAll() {
+    @Override
+    public List<Company> getAll() {
         List<Company> results = new ArrayList<>();
         Map<Long, Long> ranking = new HashMap<>();
 
@@ -56,7 +47,8 @@ public class CompanyManager {
     }
 
     // Return a list of companies that have the specified name
-    public List<Company> selectByName(String name) {
+    @Override
+    public List<Company> getByName(String name) {
         List<Company> results = new ArrayList<>();
 
         Transaction tx = null;
@@ -72,37 +64,5 @@ public class CompanyManager {
             he.printStackTrace();
         }
         return results;
-    }
-
-    // For each new transient company object {$NAME, $WEBSITE}:
-    // If a company doesn't exist in the database with $NAME, add it
-    // Otherwise, update existing company object to have the same $WEBSITE
-    public void bulkUpdate(List<Company> newCompanies) {
-        Transaction tx = null;
-        try (Session session = factory.openSession()) {
-            tx = session.beginTransaction();
-            for (int i = 0; i < newCompanies.size(); i++) {
-                Company newCompany = newCompanies.get(i);
-                Query<Company> query = session.createQuery("from Company where name = :name", Company.class);
-                query.setParameter("name", newCompany.getName());
-                List<Company> existing = query.list();
-                if (existing.isEmpty()) {
-                    // New company is now persistent
-                    session.save(newCompany);
-                } else {
-                    // New company is still left transient,
-                    // so we replace it with the old, persistent company object
-                    Company oldCompany = existing.get(0);
-                    oldCompany.setWebsite(newCompany.getWebsite());
-                    session.update(oldCompany);
-                    newCompanies.set(i, oldCompany);
-                }
-            }
-            tx.commit();
-        } catch (HibernateException he) {
-            if (tx != null)
-                tx.rollback();
-            he.printStackTrace();
-        }
     }
 }

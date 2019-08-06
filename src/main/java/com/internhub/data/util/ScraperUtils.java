@@ -1,4 +1,4 @@
-package com.internhub.data.scrapers;
+package com.internhub.data.util;
 
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
@@ -30,18 +30,20 @@ public class ScraperUtils {
     }
 
     public static String getBase(String link) {
-        URL url = makeURL(link);
+        URL url = makeURL(link, true);
         if (url == null) {
             return null;
         }
         return url.getProtocol() + "://" + url.getHost();
     }
 
-    public static URL makeURL(String link) {
+    public static URL makeURL(String link, boolean verbose) {
         try {
             return new URL(link);
         } catch (MalformedURLException ex) {
-            logger.info(String.format("Link '%s' is malformed", link));
+            if (verbose) {
+                logger.error(String.format("Link '%s' is malformed", link), ex);
+            }
             return null;
         }
     }

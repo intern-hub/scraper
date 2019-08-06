@@ -1,23 +1,25 @@
 package com.internhub.data;
 
-import com.internhub.data.managers.CompanyManager;
-import com.internhub.data.managers.PositionManager;
+import com.internhub.data.companies.readers.CompanyReader;
+import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
+import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
+import com.internhub.data.companies.writers.CompanyWriter;
+import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
+import com.internhub.data.positions.writers.PositionWriter;
+import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
-import com.internhub.data.scrapers.CompanyScraper;
-import com.internhub.data.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.scrapers.impl.DefaultPositionScraper;
-import com.internhub.data.scrapers.PositionScraper;
+import com.internhub.data.companies.scrapers.CompanyScraper;
+import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
+import com.internhub.data.positions.scrapers.IPositionScraper;
 
 import com.internhub.data.selenium.CloseableWebDriverAdapter;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
@@ -48,33 +50,35 @@ public class Main {
     }
 
     private static void scrapeCompanies() {
-        CompanyManager companyManager = new CompanyManager();
+        CompanyWriter companyWriter = new CompanyHibernateWriter();
         CompanyScraper companyScraper = new RedditCompanyScraper();
-        companyManager.bulkUpdate(companyScraper.fetch());
+        companyWriter.save(companyScraper.fetch());
     }
 
     private static void scrapePositions() {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            for (Company company : companyManager.selectAll()) {
-                positionManager.bulkUpdate(positionScraper.fetch(company));
-            }
-        }
+        CompanyReader companyReader = new CompanyHibernateReader();
+        scrapePositions(companyReader.getAll());
     }
 
     private static void scrapePositions(String name) {
+        CompanyReader companyReader = new CompanyHibernateReader();
+        List<Company> companies = companyReader.getByName(name);
+        if (companies.isEmpty()) {
+            logger.error(String.format("Unable to find a company by the name of %s.", name));
+        } else {
+            assert(companies.size() == 1);
+            scrapePositions(companies);
+        }
+    }
+
+    private static void scrapePositions(List<Company> companies) {
         try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
-            CompanyManager companyManager = new CompanyManager();
-            PositionManager positionManager = new PositionManager();
-            PositionScraper positionScraper = new DefaultPositionScraper(driverAdapter.getDriver());
-            List<Company> companies = companyManager.selectByName(name);
-            if (companies.isEmpty()) {
-                logger.error(String.format("Company %s does not exist in the database.", name));
-            } else {
-                Company company = companies.get(0);
-                positionManager.bulkUpdate(positionScraper.fetch(company));
+            PositionWriter positionWriter = new PositionHibernateWriter();
+            IPositionScraper IPositionScraper = new PositionScraper(
+                    new GoogleInitialLinkStrategy(),
+                    new PositionBFSStrategy(driverAdapter.getDriver()));
+            for (Company company : companies) {
+                positionWriter.save(IPositionScraper.fetch(company));
             }
         }
     }
@@ -91,6 +95,7 @@ public class Main {
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine line = parser.parse(options, args);
+
             if (line.hasOption("h")) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("gradle run --args=", options, true);

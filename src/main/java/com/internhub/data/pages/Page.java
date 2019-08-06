@@ -1,6 +1,7 @@
-package com.internhub.data.scrapers;
+package com.internhub.data.pages;
 
 import com.google.common.collect.Lists;
+import com.internhub.data.util.ScraperUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -19,13 +20,11 @@ public class Page {
     private static final Logger logger = LoggerFactory.getLogger(Page.class);
     private static final int MAX_IFRAME_WAIT = 3;
 
-
     private String mLink;
     private String mSource;
     private Document mDocument;
     private List<Elements> mIFrameBodies;
     private Elements mBody;
-
 
     public Page(String source, String link) {
         mSource = source;

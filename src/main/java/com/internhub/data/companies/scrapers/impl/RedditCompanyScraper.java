@@ -1,9 +1,8 @@
-package com.internhub.data.scrapers.impl;
+package com.internhub.data.companies.scrapers.impl;
 
+import com.internhub.data.companies.scrapers.CompanyScraper;
 import com.internhub.data.models.Company;
-import com.internhub.data.scrapers.CompanyScraper;
-import com.internhub.data.verifiers.CompanyVerifier;
-import fastily.jwiki.core.Wiki;
+import com.internhub.data.companies.verifiers.CompanyVerifier;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
 import net.dean.jraw.http.OkHttpNetworkAdapter;
