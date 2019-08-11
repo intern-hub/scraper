@@ -4,10 +4,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
-public class CloseableWebDriverAdapter implements AutoCloseable {
+public class MyWebDriver implements AutoCloseable {
     private WebDriver mDriver;
 
-    public CloseableWebDriverAdapter() {
+    public MyWebDriver() {
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
         options.addArguments(

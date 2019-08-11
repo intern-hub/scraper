@@ -5,6 +5,7 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
@@ -12,13 +13,9 @@ import org.openqa.selenium.WebDriver;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class PositionBFSStrategy implements IPositionScraperStrategy {
-    protected static final int MAX_DEPTH = 4;
-    protected static final int MAX_TOTAL_LINKS = 100;
-    protected static final int PAGE_LOAD_DELAY_MS = 2000;
-
-    protected WebDriver mDriver;
-    protected PositionExtractor mPositionExtractor;
+public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
+    private WebDriver mDriver;
+    private PositionExtractor mPositionExtractor;
 
     public PositionBFSStrategy(WebDriver driver) {
         mDriver = driver;
@@ -80,7 +77,8 @@ public class PositionBFSStrategy implements IPositionScraperStrategy {
     /**
      * Returns a processed page with all necessary information describing a web page
      */
-    protected Page getPage(String link) {
+    @Override
+    public Page getPage(String link) {
         // Use Selenium to fetch the page and wait a bit for it to load
         try {
             mDriver.get(link);
@@ -97,7 +95,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy {
     /**
      * Logs info about found position
      */
-    protected void logPosition(Position position, String link) {
+    private void logPosition(Position position, String link) {
         if (position != null) {
             logger.info(String.format("Identified valid position at %s.", link));
             logger.info(String.format("Title is %s.", position.getTitle()));

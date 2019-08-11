@@ -5,6 +5,12 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.scrapers.IPositionMTScraper;
+import com.internhub.data.positions.scrapers.IPositionMTScraperStrategy;
+import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
+import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
+import com.internhub.data.selenium.MyWebDriverPool;
+import com.internhub.data.selenium.MyWebDriverPoolWrapper;
 import org.openqa.selenium.WebDriver;
 
 import java.util.HashSet;
@@ -21,16 +27,19 @@ import java.util.stream.Collectors;
 class ScheduledDelayFinishedException extends RuntimeException {
 }
 
-public class PositionBFSMTStrategy extends PositionBFSStrategy {
+public class PositionBFSMTStrategy implements IPositionMTScraperStrategy, IPositionBFSScraperStrategy {
+    private final MyWebDriverPool mWebDriverPool;
+    private final PositionExtractor mPositionExtractor;
     private final ScheduledExecutorService scheduler;
 
-    public PositionBFSMTStrategy(WebDriver driver) {
-        super(driver);
+    public PositionBFSMTStrategy(MyWebDriverPool pool) {
+        mWebDriverPool = pool;
+        mPositionExtractor = new PositionExtractor();
         scheduler = Executors.newScheduledThreadPool(1);
     }
 
     @Override
-    public List<Position> fetch(Company company, List<String> initialLinks) {
+    public Future<List<Position>> fetch(Company company, List<String> initialLinks) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>(initialLinks);
@@ -59,7 +68,7 @@ public class PositionBFSMTStrategy extends PositionBFSStrategy {
             future.get();
         } catch (InterruptedException | ExecutionException | ScheduledDelayFinishedException ignored) {
         }
-        return results;
+        return CompletableFuture.completedFuture(results);
     }
 
     private void processCandidate(Company company, Candidate candidate, PriorityQueue<Candidate> candidates,
@@ -79,6 +88,34 @@ public class PositionBFSMTStrategy extends PositionBFSStrategy {
                     .filter((link) -> !visited.contains(link))
                     .map((link) -> new Candidate(link, candidate.depth + 1))
                     .collect(Collectors.toList()));
+        }
+    }
+
+    /**
+     * Logs info about found position
+     */
+    private void logPosition(Position position, String link) {
+        if (position != null) {
+            logger.info(String.format("Identified valid position at %s.", link));
+            logger.info(String.format("Title is %s.", position.getTitle()));
+            logger.info(String.format("Season & year is %s %d.", position.getSeason(), position.getYear()));
+            logger.info(String.format("Location is %s.", position.getLocation()));
+            logger.info(String.format("Minimum degree is %s.", position.getDegree()));
+        } else {
+            logger.info(String.format("Unable to find position at %s.", link));
+        }
+    }
+
+    public Page getPage(String link) {
+        try (MyWebDriverPoolWrapper driverWrapper = mWebDriverPool.aquire()) {
+            WebDriver driver = driverWrapper.getDriver();
+            driver.get(link);
+            Page page = new Page(driver.getPageSource(), link);
+            page.process(driver);
+            return page;
+        } catch (InterruptedException e) {
+            logger.warn("Could not acquire web driver");
+            return null;
         }
     }
 }
