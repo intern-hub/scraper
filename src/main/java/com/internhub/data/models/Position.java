@@ -98,7 +98,7 @@ public class Position {
                         "Season: %s \n" +
                         "Year: %s \n" +
                         "Degree: %s \n" +
-                        "Location: %s \n", company, title, link,
+                        "Location: %s \n", company.toString(), title, link,
                 season, year, degree, location);
     }
 }

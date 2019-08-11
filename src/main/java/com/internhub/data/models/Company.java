@@ -81,4 +81,8 @@ public class Company {
     public void setPopularity(Integer popularity) {
         this.popularity = popularity;
     }
+
+    public String toString() {
+        return name;
+    }
 }

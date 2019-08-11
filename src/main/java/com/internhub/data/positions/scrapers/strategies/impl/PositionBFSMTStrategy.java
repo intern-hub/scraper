@@ -5,8 +5,6 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
-import com.internhub.data.positions.scrapers.IPositionMTScraper;
-import com.internhub.data.positions.scrapers.IPositionMTScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.MyWebDriverPool;
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 class ScheduledDelayFinishedException extends RuntimeException {
 }
 
-public class PositionBFSMTStrategy implements IPositionMTScraperStrategy, IPositionBFSScraperStrategy {
+public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
     private final MyWebDriverPool mWebDriverPool;
     private final PositionExtractor mPositionExtractor;
     private final ScheduledExecutorService scheduler;
@@ -39,10 +37,10 @@ public class PositionBFSMTStrategy implements IPositionMTScraperStrategy, IPosit
     }
 
     @Override
-    public Future<List<Position>> fetch(Company company, List<String> initialLinks) {
+    public List<Position> fetch(Company company, List<String> initialLinks) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
-        Set<String> visited = new HashSet<>(initialLinks);
+        Set<String> visited = new HashSet<>();
 
         final AtomicInteger totalLinks = new AtomicInteger(0);
         candidates.addAll(initialLinks.stream()
@@ -53,6 +51,10 @@ public class PositionBFSMTStrategy implements IPositionMTScraperStrategy, IPosit
                 () -> {
                     if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
                         Candidate candidate = candidates.poll();
+                        if(visited.contains(candidate.link)) {
+                            return;
+                        }
+
                         logger.info(String.format(
                                 "[%d/%d] Visiting %s (depth = %d) ...",
                                 totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
@@ -68,7 +70,7 @@ public class PositionBFSMTStrategy implements IPositionMTScraperStrategy, IPosit
             future.get();
         } catch (InterruptedException | ExecutionException | ScheduledDelayFinishedException ignored) {
         }
-        return CompletableFuture.completedFuture(results);
+        return results;
     }
 
     private void processCandidate(Company company, Candidate candidate, PriorityQueue<Candidate> candidates,

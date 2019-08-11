@@ -14,7 +14,7 @@ import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 
-import com.internhub.data.selenium.CloseableWebDriverAdapter;
+import com.internhub.data.selenium.MyWebDriver;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
 import org.slf4j.Logger;
@@ -72,11 +72,11 @@ public class Main {
     }
 
     private static void scrapePositions(List<Company> companies) {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
+        try (MyWebDriver driver = new MyWebDriver()) {
             PositionWriter positionWriter = new PositionHibernateWriter();
             IPositionScraper IPositionScraper = new PositionScraper(
                     new GoogleInitialLinkStrategy(),
-                    new PositionBFSStrategy(driverAdapter.getDriver()));
+                    new PositionBFSStrategy(driver.getDriver()));
             for (Company company : companies) {
                 positionWriter.save(IPositionScraper.fetch(company));
             }

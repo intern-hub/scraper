@@ -3,9 +3,7 @@ package com.internhub.data;
 import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.positions.scrapers.IPositionMTScraper;
 import com.internhub.data.positions.scrapers.IPositionScraper;
-import com.internhub.data.positions.scrapers.PositionMTScraper;
 import com.internhub.data.positions.scrapers.PositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
@@ -18,8 +16,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class PositionScraperTest {
     @Rule
@@ -33,21 +34,36 @@ public class PositionScraperTest {
     }
 
     @Test
-    public void testPositionMTScraper() {
+    public void testPositionMTScraper() throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(10);
         List<Company> companies = buildCompanies();
-        List<Position> positions = Lists.newArrayList();
-        List<Future> futures = Lists.newArrayList();
+        List<Callable<List<Position>>> tasks = Lists.newArrayList();
         try (MyWebDriverPool pool = new MyWebDriverPool()) {
-            IPositionMTScraper IPositionScraper = new PositionMTScraper(
+            IPositionScraper positionScraper = new PositionScraper(
                     new GoogleInitialLinkStrategy(),
                     new PositionBFSMTStrategy(pool));
             for (Company company : companies) {
-                futures.addAll(IPositionScraper.fetch(company));
+                tasks.add(() -> positionScraper.fetch(company));
             }
         }
+
+        List<Future<List<Position>>> futures = executor.invokeAll(tasks);
+        List<Position> positions = futures.stream().map(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).filter(Objects::nonNull).flatMap(List::stream).collect(Collectors.toList());
+
         for (Position position : positions) {
             logger.info(position.toString());
         }
+    }
+
+    private Future createFuture(Runnable r, ExecutorService executor) {
+        return executor.submit(r);
     }
 
     @Test
@@ -74,17 +90,27 @@ public class PositionScraperTest {
         amazon.setWebsite("https://amazon.com");
 
         Company alarm = new Company();
-        amazon.setName("Alarm");
-        amazon.setWebsite("https://alarm.com");
+        alarm.setName("Alarm");
+        alarm.setWebsite("https://alarm.com");
 
         Company uber = new Company();
-        amazon.setName("Uber");
-        amazon.setWebsite("https://uber.com");
+        uber.setName("Uber");
+        uber.setWebsite("https://uber.com");
 
         Company lyft = new Company();
-        amazon.setName("Lyft");
-        amazon.setWebsite("https://lyft.com");
+        lyft.setName("Lyft");
+        lyft.setWebsite("https://lyft.com");
 
+        Company goldman = new Company();
+        goldman.setName("Goldman Sachs");
+        goldman.setWebsite("https://goldmansachs.com");
+
+        Company jetbrains = new Company();
+        jetbrains.setName("Jetbrains");
+        jetbrains.setWebsite("https://jetbrains.com");
+
+        ret.add(goldman);
+        ret.add(jetbrains);
         ret.add(amazon);
         ret.add(alarm);
         ret.add(uber);
