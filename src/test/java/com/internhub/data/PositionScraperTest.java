@@ -1,6 +1,10 @@
 package com.internhub.data;
 
 import com.google.common.collect.Lists;
+import com.internhub.data.companies.readers.CompanyReader;
+import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
+import com.internhub.data.companies.writers.CompanyWriter;
+import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.IPositionScraper;
@@ -8,6 +12,8 @@ import com.internhub.data.positions.scrapers.PositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
+import com.internhub.data.positions.writers.PositionWriter;
+import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.selenium.MyWebDriver;
 import com.internhub.data.selenium.MyWebDriverPool;
 import org.junit.Before;
@@ -62,10 +68,6 @@ public class PositionScraperTest {
         }
     }
 
-    private Future createFuture(Runnable r, ExecutorService executor) {
-        return executor.submit(r);
-    }
-
     @Test
     public void testPositionScraper() {
         List<Company> companies = buildCompanies();
@@ -78,6 +80,39 @@ public class PositionScraperTest {
                 positions.addAll(IPositionScraper.fetch(company));
             }
         }
+        for (Position position : positions) {
+            logger.info(position.toString());
+        }
+    }
+
+    @Test
+    public void testHibernateWriter() throws InterruptedException {
+        CompanyReader companyReader = new CompanyHibernateReader();
+        List<Company> companies = companyReader.getAll();
+
+        ExecutorService executor = Executors.newWorkStealingPool(25);
+        List<Callable<List<Position>>> tasks = Lists.newArrayList();
+        try (MyWebDriverPool pool = new MyWebDriverPool()) {
+            IPositionScraper positionScraper = new PositionScraper(
+                    new GoogleInitialLinkStrategy(),
+                    new PositionBFSMTStrategy(pool));
+            for (Company company : companies) {
+                tasks.add(() -> positionScraper.fetch(company));
+            }
+        }
+
+        List<Future<List<Position>>> futures = executor.invokeAll(tasks);
+        List<Position> positions = futures.stream().map(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).filter(Objects::nonNull).flatMap(List::stream).collect(Collectors.toList());
+
+        PositionWriter writer = new PositionHibernateWriter();
+        writer.save(positions);
         for (Position position : positions) {
             logger.info(position.toString());
         }
