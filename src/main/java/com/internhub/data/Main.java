@@ -7,6 +7,7 @@ import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.CompanyWriter;
 import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.writers.PositionWriter;
@@ -66,18 +67,19 @@ public class Main {
         CompanyReader companyReader = new CompanyHibernateReader();
         List<Company> companies = companyReader.getAll();
 
-        ExecutorService executor = Executors.newWorkStealingPool(25);
+        ExecutorService executor = Executors.newWorkStealingPool();
         List<Callable<List<Position>>> tasks = Lists.newArrayList();
         try (MyWebDriverPool pool = new MyWebDriverPool()) {
-            IPositionScraper positionScraper = new PositionScraper(
-                    new GoogleInitialLinkStrategy(),
-                    new PositionBFSMTStrategy(pool));
+            InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
             for (Company company : companies) {
+                IPositionScraper positionScraper = new PositionScraper(
+                        linkStrategy,
+                        new PositionBFSMTStrategy(pool));
                 tasks.add(() -> positionScraper.fetch(company));
             }
         }
 
-        List<Future<List<Position>>> futures = null;
+        List<Future<List<Position>>> futures = Lists.newArrayList();
         try {
             futures = executor.invokeAll(tasks);
         } catch (InterruptedException e) {

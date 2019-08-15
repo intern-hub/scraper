@@ -9,6 +9,7 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
@@ -45,10 +46,11 @@ public class PositionScraperTest {
         List<Company> companies = buildCompanies();
         List<Callable<List<Position>>> tasks = Lists.newArrayList();
         try (MyWebDriverPool pool = new MyWebDriverPool()) {
-            IPositionScraper positionScraper = new PositionScraper(
-                    new GoogleInitialLinkStrategy(),
-                    new PositionBFSMTStrategy(pool));
+            InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
             for (Company company : companies) {
+                IPositionScraper positionScraper = new PositionScraper(
+                        linkStrategy,
+                        new PositionBFSMTStrategy(pool));
                 tasks.add(() -> positionScraper.fetch(company));
             }
         }
@@ -90,13 +92,14 @@ public class PositionScraperTest {
         CompanyReader companyReader = new CompanyHibernateReader();
         List<Company> companies = companyReader.getAll();
 
-        ExecutorService executor = Executors.newWorkStealingPool(25);
+        ExecutorService executor = Executors.newWorkStealingPool();
         List<Callable<List<Position>>> tasks = Lists.newArrayList();
         try (MyWebDriverPool pool = new MyWebDriverPool()) {
-            IPositionScraper positionScraper = new PositionScraper(
-                    new GoogleInitialLinkStrategy(),
-                    new PositionBFSMTStrategy(pool));
+            InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
             for (Company company : companies) {
+                IPositionScraper positionScraper = new PositionScraper(
+                        linkStrategy,
+                        new PositionBFSMTStrategy(pool));
                 tasks.add(() -> positionScraper.fetch(company));
             }
         }

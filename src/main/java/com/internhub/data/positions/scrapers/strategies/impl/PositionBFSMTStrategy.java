@@ -19,16 +19,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-/**
- * Had to do something like this to escape the schedule executor service task
- */
-class ScheduledDelayFinishedException extends RuntimeException {
-}
-
 public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
     private final MyWebDriverPool mWebDriverPool;
     private final PositionExtractor mPositionExtractor;
     private final ScheduledExecutorService scheduler;
+    private final Object syncObj = new Object();
 
     public PositionBFSMTStrategy(MyWebDriverPool pool) {
         mWebDriverPool = pool;
@@ -47,30 +42,56 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                 .map((link) -> new Candidate(link, 1))
                 .collect(Collectors.toList()));
 
-        ScheduledFuture future = scheduler.scheduleWithFixedDelay(
-                () -> {
-                    if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
-                        Candidate candidate = candidates.poll();
-                        if(visited.contains(candidate.link)) {
-                            return;
-                        }
-
-                        logger.info(String.format(
-                                "[%d/%d] Visiting %s (depth = %d) ...",
-                                totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
-
-                        processCandidate(company, candidate, candidates, visited, results);
-                    } else {
-                        throw new ScheduledDelayFinishedException();
-                    }
-                }, 0, PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS
+        scheduler.schedule(
+                () -> process(company, candidates, totalLinks, visited, results), PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS
         );
 
-        try {
-            future.get();
-        } catch (InterruptedException | ExecutionException | ScheduledDelayFinishedException ignored) {
+        synchronized (syncObj) {
+            try {
+                syncObj.wait();
+            } catch (InterruptedException ignored) {
+            }
         }
+
         return results;
+    }
+
+    private void process(Company company, PriorityQueue<Candidate> candidates,
+                         final AtomicInteger totalLinks, Set<String> visited, List<Position> results) {
+        if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
+            Candidate candidate = candidates.poll();
+            Runnable processFunc = () -> process(company, candidates, totalLinks, visited, results);
+
+            try {
+                if (visited.contains(candidate.link)) {
+                    return;
+                }
+
+                logger.info(String.format(
+                        "[%d/%d] Visiting %s (depth = %d) ...",
+                        totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+
+                processCandidate(company, candidate, candidates, visited, results);
+            } catch (Exception e) {
+                logger.error(String.format(
+                        "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
+                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+            } finally {
+                scheduler.schedule(
+                        processFunc,
+                        PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS
+                );
+            }
+        } else {
+            logger.info(String.format(
+                    "[%d/%d] Finished scraping %s",
+                    totalLinks.get(), MAX_TOTAL_LINKS, company));
+            synchronized (syncObj) {
+                syncObj.notify();
+                scheduler.shutdownNow();
+            }
+        }
+
     }
 
     private void processCandidate(Company company, Candidate candidate, PriorityQueue<Candidate> candidates,

@@ -47,8 +47,8 @@ public class Page {
             try {
                 WebDriverWait wait = new WebDriverWait(driver, MAX_IFRAME_WAIT);
                 wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(iframe));
-            } catch (TimeoutException timeout) {
-                logger.error("Unable to switch to iframe due to timeout." + iframe + ".", timeout);
+            } catch (TimeoutException ex) {
+                logger.error(String.format("Unable to switch to iframe due to timeout. %s", iframe));
                 continue;
             }
 

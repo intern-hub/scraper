@@ -83,7 +83,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
         try {
             mDriver.get(link);
         } catch (TimeoutException ex) {
-            logger.error("Skipping page due to timeout issues.", ex);
+            logger.error(String.format("Skipping page %s due to timeout issues.", link));
             return null;
         }
 
