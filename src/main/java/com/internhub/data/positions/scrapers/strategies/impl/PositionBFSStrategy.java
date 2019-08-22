@@ -42,7 +42,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
                     "[%d/%d] Visiting %s (depth = %d) ...",
                     totalLinks + 1, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
 
-            Page page = getPageWithDelay(candidate.link);
+            Page page = getPage(candidate.link);
             PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
             logPosition(extraction.position, candidate.link);
@@ -63,28 +63,23 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
         return results;
     }
 
-    private Page getPageWithDelay(String link) {
-        Page page = null;
-        try {
-            page = getPage(link);
-            Thread.sleep(PAGE_LOAD_DELAY_MS);
-        } catch (InterruptedException ex) {
-            logger.error("Could not wait for page to load.", ex);
-        }
-        return page;
-    }
-
     /**
      * Returns a processed page with all necessary information describing a web page
      */
     @Override
     public Page getPage(String link) {
-        // Use Selenium to fetch the page and wait a bit for it to load
+        // Use Selenium to fetch the page
         try {
             mDriver.get(link);
         } catch (TimeoutException ex) {
             logger.error(String.format("Skipping page %s due to timeout issues.", link));
             return null;
+        }
+        // Wait for the page to load any JavaScript (e.g Amazon's internships)
+        try {
+            Thread.sleep(PAGE_LOAD_DELAY_MS);
+        } catch (InterruptedException ex) {
+            logger.error("Could not wait for page to load.", ex);
         }
 
         Page page = new Page(mDriver.getPageSource(), link);

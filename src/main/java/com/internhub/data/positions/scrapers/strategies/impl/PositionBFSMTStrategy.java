@@ -9,6 +9,7 @@ import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrat
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.MyWebDriverPool;
 import com.internhub.data.selenium.MyWebDriverPoolWrapper;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
 import java.util.HashSet;
@@ -73,9 +74,15 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
 
                 processCandidate(company, candidate, candidates, visited, results);
             } catch (Exception e) {
-                logger.error(String.format(
+                String message = String.format(
                         "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
-                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
+                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth);
+                if (e instanceof TimeoutException) {
+                    logger.error(message);
+                }
+                else {
+                    logger.error(message, e);
+                }
             } finally {
                 scheduler.schedule(
                         processFunc,
@@ -133,6 +140,8 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         try (MyWebDriverPoolWrapper driverWrapper = mWebDriverPool.acquire()) {
             WebDriver driver = driverWrapper.getDriver();
             driver.get(link);
+            // This is here to let JavaScript load!
+            // Thread.sleep(PAGE_LOAD_DELAY_MS);
             Page page = new Page(driver.getPageSource(), link);
             page.process(driver);
             return page;
