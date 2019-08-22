@@ -5,6 +5,7 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
@@ -12,11 +13,7 @@ import org.openqa.selenium.WebDriver;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class PositionBFSStrategy implements IPositionScraperStrategy {
-    private static final int MAX_DEPTH = 4;
-    private static final int MAX_TOTAL_LINKS = 100;
-    private static final int PAGE_LOAD_DELAY_MS = 2000;
-
+public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
     private WebDriver mDriver;
     private PositionExtractor mPositionExtractor;
 
@@ -48,7 +45,6 @@ public class PositionBFSStrategy implements IPositionScraperStrategy {
             Page page = getPage(candidate.link);
             PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
-            ++totalLinks;
             logPosition(extraction.position, candidate.link);
 
             if (extraction.position != null) {
@@ -61,6 +57,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy {
                         .map((link) -> new Candidate(link, candidate.depth + 1))
                         .collect(Collectors.toList()));
             }
+            ++totalLinks;
         }
 
         return results;
@@ -69,17 +66,20 @@ public class PositionBFSStrategy implements IPositionScraperStrategy {
     /**
      * Returns a processed page with all necessary information describing a web page
      */
-    private Page getPage(String link) {
-        // Use Selenium to fetch the page and wait a bit for it to load
+    @Override
+    public Page getPage(String link) {
+        // Use Selenium to fetch the page
         try {
             mDriver.get(link);
-            Thread.sleep(PAGE_LOAD_DELAY_MS);
         } catch (TimeoutException ex) {
-            logger.error("Skipping page due to timeout issues.", ex);
+            logger.error(String.format("Skipping page %s due to timeout issues.", link));
             return null;
+        }
+        // Wait for the page to load any JavaScript (e.g Amazon's internships)
+        try {
+            Thread.sleep(PAGE_LOAD_DELAY_MS);
         } catch (InterruptedException ex) {
             logger.error("Could not wait for page to load.", ex);
-            return null;
         }
 
         Page page = new Page(mDriver.getPageSource(), link);

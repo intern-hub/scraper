@@ -89,4 +89,16 @@ public class Position {
     public void setLocation(String location) {
         this.location = location;
     }
+
+    public String toString() {
+        return String.format("\n" +
+                        "Company: %s \n" +
+                        "Position Title: %s \n" +
+                        "Link: %s \n" +
+                        "Season: %s \n" +
+                        "Year: %s \n" +
+                        "Degree: %s \n" +
+                        "Location: %s \n", company.toString(), title, link,
+                season, year, degree, location);
+    }
 }

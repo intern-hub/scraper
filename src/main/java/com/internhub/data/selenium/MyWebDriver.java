@@ -4,10 +4,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
-public class CloseableWebDriverAdapter implements AutoCloseable {
+import java.util.concurrent.TimeUnit;
+
+public class MyWebDriver implements AutoCloseable {
     private WebDriver mDriver;
 
-    public CloseableWebDriverAdapter() {
+    public MyWebDriver() {
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
         options.addArguments(
@@ -25,6 +27,8 @@ public class CloseableWebDriverAdapter implements AutoCloseable {
                         "Chrome/70.0.3538.77 Safari/537.36"
         );
         this.mDriver = new ChromeDriver(options);
+        mDriver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        mDriver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
     }
 
     public WebDriver getDriver() {

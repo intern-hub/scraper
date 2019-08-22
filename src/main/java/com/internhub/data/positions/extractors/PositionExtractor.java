@@ -101,6 +101,10 @@ public class PositionExtractor {
     }
 
     private boolean isValidPage(Page page) {
+        if(page == null) {
+            return false;
+        }
+
         String pageSource = page.getSource().toLowerCase();
         for (String keyword : new String[]{"career", "job", "intern"}) {
             if (pageSource.contains(keyword)) {

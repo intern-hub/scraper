@@ -1,11 +1,15 @@
 package com.internhub.data;
 
+import com.google.common.collect.Lists;
 import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.CompanyWriter;
+import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.PositionScraper;
+import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.writers.PositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
@@ -14,7 +18,8 @@ import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 
-import com.internhub.data.selenium.CloseableWebDriverAdapter;
+import com.internhub.data.selenium.MyWebDriver;
+import com.internhub.data.selenium.MyWebDriverPool;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
 import org.slf4j.Logger;
@@ -22,6 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -57,7 +65,41 @@ public class Main {
 
     private static void scrapePositions() {
         CompanyReader companyReader = new CompanyHibernateReader();
-        scrapePositions(companyReader.getAll());
+        List<Company> companies = companyReader.getAll();
+
+        ExecutorService executor = Executors.newWorkStealingPool();
+        List<Callable<List<Position>>> tasks = Lists.newArrayList();
+        try (MyWebDriverPool pool = new MyWebDriverPool()) {
+            InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
+            for (Company company : companies) {
+                IPositionScraper positionScraper = new PositionScraper(
+                        linkStrategy,
+                        new PositionBFSMTStrategy(pool));
+                tasks.add(() -> positionScraper.fetch(company));
+            }
+        }
+
+        List<Future<List<Position>>> futures = Lists.newArrayList();
+        try {
+            futures = executor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        List<Position> positions = futures.stream().map(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).filter(Objects::nonNull).flatMap(List::stream).collect(Collectors.toList());
+
+        PositionWriter writer = new PositionHibernateWriter();
+        writer.save(positions);
+        for (Position position : positions) {
+            logger.info(position.toString());
+        }
     }
 
     private static void scrapePositions(String name) {
@@ -72,11 +114,11 @@ public class Main {
     }
 
     private static void scrapePositions(List<Company> companies) {
-        try (CloseableWebDriverAdapter driverAdapter = new CloseableWebDriverAdapter()) {
+        try (MyWebDriver driver = new MyWebDriver()) {
             PositionWriter positionWriter = new PositionHibernateWriter();
             IPositionScraper IPositionScraper = new PositionScraper(
                     new GoogleInitialLinkStrategy(),
-                    new PositionBFSStrategy(driverAdapter.getDriver()));
+                    new PositionBFSStrategy(driver.getDriver()));
             for (Company company : companies) {
                 positionWriter.save(IPositionScraper.fetch(company));
             }
