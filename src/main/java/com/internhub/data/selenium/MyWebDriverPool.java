@@ -10,7 +10,7 @@ public class MyWebDriverPool implements AutoCloseable {
     private final Semaphore mAvailable = new Semaphore(MAX_DRIVERS, true);
     private final BlockingQueue<MyWebDriver> mDrivers = new ArrayBlockingQueue<MyWebDriver>(MAX_DRIVERS);
 
-    public MyWebDriverPoolWrapper aquire() throws InterruptedException {
+    public MyWebDriverPoolWrapper acquire() throws InterruptedException {
         mAvailable.acquire();
         MyWebDriver driver;
         if (mDrivers.isEmpty()) {

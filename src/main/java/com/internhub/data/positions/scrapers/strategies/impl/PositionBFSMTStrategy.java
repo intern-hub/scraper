@@ -75,7 +75,7 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
             } catch (Exception e) {
                 logger.error(String.format(
                         "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
-                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             } finally {
                 scheduler.schedule(
                         processFunc,
@@ -130,7 +130,7 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
     }
 
     public Page getPage(String link) {
-        try (MyWebDriverPoolWrapper driverWrapper = mWebDriverPool.aquire()) {
+        try (MyWebDriverPoolWrapper driverWrapper = mWebDriverPool.acquire()) {
             WebDriver driver = driverWrapper.getDriver();
             driver.get(link);
             Page page = new Page(driver.getPageSource(), link);
