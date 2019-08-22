@@ -73,16 +73,14 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                         totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
 
                 processCandidate(company, candidate, candidates, visited, results);
+            } catch (TimeoutException e) {
+                logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
+                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             } catch (Exception e) {
                 String message = String.format(
                         "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
                         totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth);
-                if (e instanceof TimeoutException) {
-                    logger.error(message);
-                }
-                else {
-                    logger.error(message, e);
-                }
+                logger.error(message);
             } finally {
                 scheduler.schedule(
                         processFunc,
