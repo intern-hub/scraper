@@ -31,8 +31,11 @@ public class GoogleInitialLinkStrategy implements InitialLinkStrategy {
             }
         }
 
-        if(googled.isEmpty()) {
-            logger.warn("Link strategy could not find any initial links.");
+        if (googled.isEmpty()) {
+            logger.warn(String.format("Link strategy could not find any initial links for %s.", company.getName()));
+        }
+        else {
+            logger.info(String.format("Found %d initial links for %s.", googled.size(), company.getName()));
         }
 
         return googled;

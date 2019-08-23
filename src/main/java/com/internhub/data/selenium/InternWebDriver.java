@@ -6,10 +6,10 @@ import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.util.concurrent.TimeUnit;
 
-public class MyWebDriver implements AutoCloseable {
+public class InternWebDriver implements AutoCloseable {
     private WebDriver mDriver;
 
-    public MyWebDriver() {
+    public InternWebDriver() {
         ChromeOptions options = new ChromeOptions();
         options.setHeadless(true);
         options.addArguments(

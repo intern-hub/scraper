@@ -1,6 +1,5 @@
 package com.internhub.data;
 
-import com.google.common.collect.Lists;
 import com.internhub.data.companies.readers.CompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
@@ -9,7 +8,6 @@ import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.PositionScraper;
 import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
-import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.writers.PositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.models.Company;
@@ -18,18 +16,16 @@ import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 
-import com.internhub.data.selenium.MyWebDriver;
-import com.internhub.data.selenium.MyWebDriverPool;
+import com.internhub.data.selenium.InternWebDriverPool;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -66,40 +62,33 @@ public class Main {
     private static void scrapePositions() {
         CompanyReader companyReader = new CompanyHibernateReader();
         List<Company> companies = companyReader.getAll();
-
-        ExecutorService executor = Executors.newWorkStealingPool();
-        List<Callable<List<Position>>> tasks = Lists.newArrayList();
-        try (MyWebDriverPool pool = new MyWebDriverPool()) {
-            InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
+        List<Position> positions = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(companies.size());
+        try (InternWebDriverPool pool = new InternWebDriverPool(8)) {
             for (Company company : companies) {
+                InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
                 IPositionScraper positionScraper = new PositionScraper(
                         linkStrategy,
-                        new PositionBFSMTStrategy(pool));
-                tasks.add(() -> positionScraper.fetch(company));
+                        new PositionBFSStrategy(pool));
+                executor.execute(() -> {
+                    positionScraper.setup(company);
+                    executor.execute(() -> {
+                        positionScraper.fetch(company, (intermediate) -> {
+                            positions.addAll(intermediate);
+                            latch.countDown();
+                        });
+                    });
+                });
             }
         }
-
-        List<Future<List<Position>>> futures = Lists.newArrayList();
         try {
-            futures = executor.invokeAll(tasks);
+            latch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Count down latch failed.", e);
         }
-
-        List<Position> positions = futures.stream().map(f -> {
-            try {
-                return f.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }).filter(Objects::nonNull).flatMap(List::stream).collect(Collectors.toList());
-
         PositionWriter writer = new PositionHibernateWriter();
         writer.save(positions);
-        for (Position position : positions) {
-            logger.info(position.toString());
-        }
     }
 
     private static void scrapePositions(String name) {
@@ -114,15 +103,17 @@ public class Main {
     }
 
     private static void scrapePositions(List<Company> companies) {
-        try (MyWebDriver driver = new MyWebDriver()) {
-            PositionWriter positionWriter = new PositionHibernateWriter();
-            IPositionScraper IPositionScraper = new PositionScraper(
+        List<Position> positions = new ArrayList<>();
+        try (InternWebDriverPool pool = new InternWebDriverPool()) {
+            IPositionScraper positionScraper = new PositionScraper(
                     new GoogleInitialLinkStrategy(),
-                    new PositionBFSStrategy(driver.getDriver()));
+                    new PositionBFSStrategy(pool));
             for (Company company : companies) {
-                positionWriter.save(IPositionScraper.fetch(company));
+                positionScraper.fetch(company, positions::addAll);
             }
         }
+        PositionWriter writer = new PositionHibernateWriter();
+        writer.save(positions);
     }
 
     public static void main(String[] args) {

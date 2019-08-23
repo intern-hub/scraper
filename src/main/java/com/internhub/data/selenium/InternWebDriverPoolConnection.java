@@ -2,11 +2,11 @@ package com.internhub.data.selenium;
 
 import org.openqa.selenium.WebDriver;
 
-public class MyWebDriverPoolWrapper implements AutoCloseable {
-    private final MyWebDriver mDriverAdapter;
-    private final MyWebDriverPool mPool;
+public class InternWebDriverPoolConnection implements AutoCloseable {
+    private final InternWebDriver mDriverAdapter;
+    private final InternWebDriverPool mPool;
 
-    public MyWebDriverPoolWrapper(MyWebDriver adapter, MyWebDriverPool pool) {
+    public InternWebDriverPoolConnection(InternWebDriver adapter, InternWebDriverPool pool) {
         mDriverAdapter = adapter;
         mPool = pool;
     }

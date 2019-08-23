@@ -5,8 +5,11 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.scrapers.PositionCallback;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
+import com.internhub.data.selenium.InternWebDriverPool;
+import com.internhub.data.selenium.InternWebDriverPoolConnection;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
@@ -14,16 +17,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
-    private WebDriver mDriver;
+    private InternWebDriverPool myWebDriverPool;
     private PositionExtractor mPositionExtractor;
 
-    public PositionBFSStrategy(WebDriver driver) {
-        mDriver = driver;
+    public PositionBFSStrategy(InternWebDriverPool pool) {
+        myWebDriverPool = pool;
         mPositionExtractor = new PositionExtractor();
     }
 
     @Override
-    public List<Position> fetch(Company company, List<String> initialLinks) {
+    public void fetch(Company company, List<String> initialLinks, PositionCallback callback) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>(initialLinks);
@@ -41,55 +44,57 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             logger.info(String.format(
                     "[%d/%d] Visiting %s (depth = %d) ...",
                     totalLinks + 1, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+            try {
+                Page page = getPage(candidate.link);
+                PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
-            Page page = getPage(candidate.link);
-            PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
+                logPosition(extraction.position, candidate.link);
 
-            logPosition(extraction.position, candidate.link);
+                if (extraction.position != null) {
+                    results.add(extraction.position);
+                }
 
-            if (extraction.position != null) {
-                results.add(extraction.position);
+                if (candidate.depth < MAX_DEPTH) {
+                    candidates.addAll(extraction.nextPositions.stream()
+                            .filter((link) -> !visited.contains(link))
+                            .map((link) -> new Candidate(link, candidate.depth + 1))
+                            .collect(Collectors.toList()));
+                }
+            } catch (TimeoutException e) {
+                logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
+                        totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+            } catch (Exception e) {
+                logger.error(String.format(
+                        "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
+                        totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             }
 
-            if (candidate.depth < MAX_DEPTH) {
-                candidates.addAll(extraction.nextPositions.stream()
-                        .filter((link) -> !visited.contains(link))
-                        .map((link) -> new Candidate(link, candidate.depth + 1))
-                        .collect(Collectors.toList()));
-            }
             ++totalLinks;
         }
 
-        return results;
+        callback.run(results);
     }
 
-    /**
-     * Returns a processed page with all necessary information describing a web page
-     */
-    @Override
-    public Page getPage(String link) {
-        // Use Selenium to fetch the page
-        try {
-            mDriver.get(link);
-        } catch (TimeoutException ex) {
-            logger.error(String.format("Skipping page %s due to timeout issues.", link));
+    private Page getPage(String link) {
+        try (InternWebDriverPoolConnection driverWrapper = myWebDriverPool.acquire()) {
+            WebDriver driver = driverWrapper.getDriver();
+            // Use Selenium to fetch the page
+            driver.get(link);
+            // Wait for the page to load any JavaScript (e.g Amazon's internships)
+            try {
+                Thread.sleep(PAGE_LOAD_DELAY_MS);
+            } catch (InterruptedException e) {
+                logger.error("Could not wait for page to load.", e);
+            }
+            Page page = new Page(driver.getPageSource(), link);
+            page.process(driver);
+            return page;
+        } catch (InterruptedException e) {
+            logger.error("Could not acquire web driver.", e);
             return null;
         }
-        // Wait for the page to load any JavaScript (e.g Amazon's internships)
-        try {
-            Thread.sleep(PAGE_LOAD_DELAY_MS);
-        } catch (InterruptedException ex) {
-            logger.error("Could not wait for page to load.", ex);
-        }
-
-        Page page = new Page(mDriver.getPageSource(), link);
-        page.process(mDriver);
-        return page;
     }
 
-    /**
-     * Logs info about found position
-     */
     private void logPosition(Position position, String link) {
         if (position != null) {
             logger.info(String.format("Identified valid position at %s.", link));

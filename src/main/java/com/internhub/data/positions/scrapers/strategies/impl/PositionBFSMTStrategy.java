@@ -5,10 +5,11 @@ import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
 import com.internhub.data.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.scrapers.PositionCallback;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
-import com.internhub.data.selenium.MyWebDriverPool;
-import com.internhub.data.selenium.MyWebDriverPoolWrapper;
+import com.internhub.data.selenium.InternWebDriverPool;
+import com.internhub.data.selenium.InternWebDriverPoolConnection;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
@@ -20,20 +21,25 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * @deprecated
+ * Although this strategy is faster than its single-threaded counterpart,
+ * it does not pause at the correct time.
+ */
+@Deprecated
 public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
-    private final MyWebDriverPool mWebDriverPool;
+    private final InternWebDriverPool mDriverPool;
     private final PositionExtractor mPositionExtractor;
-    private final ScheduledExecutorService scheduler;
-    private final Object syncObj = new Object();
+    private ScheduledExecutorService mService;
 
-    public PositionBFSMTStrategy(MyWebDriverPool pool) {
-        mWebDriverPool = pool;
+    public PositionBFSMTStrategy(InternWebDriverPool pool, ScheduledExecutorService service) {
+        mDriverPool = pool;
         mPositionExtractor = new PositionExtractor();
-        scheduler = Executors.newScheduledThreadPool(1);
+        mService = service;
     }
 
     @Override
-    public List<Position> fetch(Company company, List<String> initialLinks) {
+    public void fetch(Company company, List<String> initialLinks, PositionCallback callback) {
         List<Position> results = Lists.newArrayList();
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>();
@@ -43,65 +49,46 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                 .map((link) -> new Candidate(link, 1))
                 .collect(Collectors.toList()));
 
-        scheduler.schedule(
-                () -> process(company, candidates, totalLinks, visited, results), PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS
-        );
-
-        synchronized (syncObj) {
-            try {
-                syncObj.wait();
-            } catch (InterruptedException ignored) {
-            }
-        }
-
-        return results;
+        mService.execute(() -> process(company, candidates, totalLinks, visited, results, callback));
     }
 
     private void process(Company company, PriorityQueue<Candidate> candidates,
-                         final AtomicInteger totalLinks, Set<String> visited, List<Position> results) {
+                         final AtomicInteger totalLinks, Set<String> visited, List<Position> results,
+                         PositionCallback callback) {
         if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
             Candidate candidate = candidates.poll();
-            Runnable processFunc = () -> process(company, candidates, totalLinks, visited, results);
-
+            if (visited.contains(candidate.link)) {
+                return;
+            }
+            visited.add(candidate.link);
+            logger.info(String.format(
+                    "[%d/%d] Visiting %s (depth = %d) ...",
+                    totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             try {
-                if (visited.contains(candidate.link)) {
-                    return;
-                }
-
-                logger.info(String.format(
-                        "[%d/%d] Visiting %s (depth = %d) ...",
-                        totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
-
                 processCandidate(company, candidate, candidates, visited, results);
             } catch (TimeoutException e) {
                 logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
                         totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             } catch (Exception e) {
-                String message = String.format(
+                logger.error(String.format(
                         "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
-                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth);
-                logger.error(message);
+                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             } finally {
-                scheduler.schedule(
-                        processFunc,
-                        PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS
-                );
+                mService.schedule(
+                        () -> process(company, candidates, totalLinks, visited, results, callback),
+                        PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS);
             }
         } else {
             logger.info(String.format(
                     "[%d/%d] Finished scraping %s",
                     totalLinks.get(), MAX_TOTAL_LINKS, company));
-            synchronized (syncObj) {
-                syncObj.notify();
-                scheduler.shutdownNow();
-            }
+            callback.run(results);
         }
-
     }
 
-    private void processCandidate(Company company, Candidate candidate, PriorityQueue<Candidate> candidates,
+    private void processCandidate(Company company, Candidate candidate,
+                                  PriorityQueue<Candidate> candidates,
                                   Set<String> visited, List<Position> results) {
-        visited.add(candidate.link);
         Page page = getPage(candidate.link);
         PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
@@ -119,9 +106,6 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         }
     }
 
-    /**
-     * Logs info about found position
-     */
     private void logPosition(Position position, String link) {
         if (position != null) {
             logger.info(String.format("Identified valid position at %s.", link));
@@ -134,18 +118,17 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         }
     }
 
-    public Page getPage(String link) {
-        try (MyWebDriverPoolWrapper driverWrapper = mWebDriverPool.acquire()) {
-            WebDriver driver = driverWrapper.getDriver();
+    private Page getPage(String link) {
+        try (InternWebDriverPoolConnection driverConnection = mDriverPool.acquire()) {
+            WebDriver driver = driverConnection.getDriver();
             driver.get(link);
-            // This is here to let JavaScript load!
-            // Thread.sleep(PAGE_LOAD_DELAY_MS);
             Page page = new Page(driver.getPageSource(), link);
             page.process(driver);
             return page;
         } catch (InterruptedException e) {
-            logger.warn("Could not acquire web driver");
+            logger.error("Unable to acquire web driver.", e);
             return null;
         }
     }
 }
+
