@@ -1,6 +1,6 @@
 package com.internhub.data.companies.readers.impl;
 
-import com.internhub.data.companies.readers.CompanyReader;
+import com.internhub.data.companies.readers.ICompanyReader;
 import com.internhub.data.models.Company;
 import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CompanyHibernateReader implements CompanyReader {
+public class CompanyHibernateReader implements ICompanyReader {
     private static SessionFactory factory = HibernateUtils.buildSession();
 
     // Get all of the companies that are saved in the SQL database

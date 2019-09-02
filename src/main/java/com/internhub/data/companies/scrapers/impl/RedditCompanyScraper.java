@@ -1,6 +1,6 @@
 package com.internhub.data.companies.scrapers.impl;
 
-import com.internhub.data.companies.scrapers.CompanyScraper;
+import com.internhub.data.companies.scrapers.ICompanyScraper;
 import com.internhub.data.models.Company;
 import com.internhub.data.companies.verifiers.CompanyVerifier;
 import net.dean.jraw.RedditClient;
@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-public class RedditCompanyScraper implements CompanyScraper {
+public class RedditCompanyScraper implements ICompanyScraper {
     private static final String REDDIT_CLIENT_ID = "Wd8K7RKBs4Z-5g";
     private static final String REDDIT_CLIENT_SECRET = "OH9Bl_aZ8fQ2NXW66g77e9dNiNg";
     private static final String REDDIT_COMPANY_LABEL = "Company/Industry: ";

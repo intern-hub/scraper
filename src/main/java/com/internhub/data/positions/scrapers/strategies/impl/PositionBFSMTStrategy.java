@@ -1,11 +1,9 @@
 package com.internhub.data.positions.scrapers.strategies.impl;
 
-import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.pages.Page;
+import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
-import com.internhub.data.positions.scrapers.PositionCallback;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.InternWebDriverPool;
@@ -19,6 +17,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -37,8 +36,7 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
     }
 
     @Override
-    public void fetch(Company company, List<String> initialLinks, PositionCallback callback) {
-        List<Position> results = Lists.newArrayList();
+    public void producePositions(Company company, List<String> initialLinks, Consumer<Position> consumer) {
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>();
 
@@ -47,12 +45,12 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                 .map((link) -> new Candidate(link, 1))
                 .collect(Collectors.toList()));
 
-        mService.execute(() -> process(company, candidates, totalLinks, visited, results, callback));
+        mService.execute(() -> process(company, candidates, totalLinks, visited, consumer));
     }
 
     private void process(Company company, PriorityQueue<Candidate> candidates,
-                         final AtomicInteger totalLinks, Set<String> visited, List<Position> results,
-                         PositionCallback callback) {
+                         final AtomicInteger totalLinks, Set<String> visited,
+                         Consumer<Position> consumer) {
         if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
             Candidate candidate = candidates.poll();
             if (visited.contains(candidate.link)) {
@@ -63,7 +61,7 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                     "[%d/%d] Visiting %s (depth = %d) ...",
                     totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             try {
-                processCandidate(company, candidate, candidates, visited, results);
+                processCandidate(company, candidate, candidates, visited, consumer);
             } catch (TimeoutException e) {
                 logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
                         totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
@@ -73,27 +71,24 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                         totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             } finally {
                 mService.schedule(
-                        () -> process(company, candidates, totalLinks, visited, results, callback),
-                        PAGE_LOAD_DELAY_MS, TimeUnit.MILLISECONDS);
+                        () -> process(company, candidates, totalLinks, visited, consumer),
+                        JAVASCRIPT_LOAD_MILLISECONDS, TimeUnit.MILLISECONDS);
             }
         } else {
-            logger.info(String.format(
-                    "[%d/%d] Finished scraping %s",
-                    totalLinks.get(), MAX_TOTAL_LINKS, company));
-            callback.run(results);
+            consumer.accept(null);
         }
     }
 
     private void processCandidate(Company company, Candidate candidate,
                                   PriorityQueue<Candidate> candidates,
-                                  Set<String> visited, List<Position> results) {
+                                  Set<String> visited, Consumer<Position> consumer) {
         Page page = getPage(candidate.link);
         PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
         logPosition(extraction.position, candidate.link);
 
         if (extraction.position != null) {
-            results.add(extraction.position);
+            consumer.accept(extraction.position);
         }
 
         if (candidate.depth < MAX_DEPTH) {

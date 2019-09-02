@@ -1,21 +1,22 @@
 package com.internhub.data;
 
-import com.internhub.data.companies.readers.CompanyReader;
+import com.google.common.collect.Lists;
+import com.internhub.data.companies.readers.ICompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
-import com.internhub.data.companies.writers.CompanyWriter;
+import com.internhub.data.companies.writers.ICompanyWriter;
 import com.internhub.data.models.Position;
-import com.internhub.data.positions.scrapers.PositionScraper;
-import com.internhub.data.positions.scrapers.strategies.InitialLinkStrategy;
-import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
-import com.internhub.data.positions.writers.PositionWriter;
-import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
-import com.internhub.data.models.Company;
-import com.internhub.data.companies.scrapers.CompanyScraper;
-import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
-import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
+import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
 import com.internhub.data.positions.scrapers.IPositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
+import com.internhub.data.models.Company;
+import com.internhub.data.companies.scrapers.ICompanyScraper;
+import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
+import com.internhub.data.positions.writers.IPositionWriter;
+import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
 import com.internhub.data.selenium.InternWebDriverPool;
 import org.apache.commons.cli.*;
 import org.apache.commons.exec.OS;
@@ -24,8 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -54,46 +57,43 @@ public class Main {
     }
 
     private static void scrapeCompanies() {
-        CompanyWriter companyWriter = new CompanyHibernateWriter();
-        CompanyScraper companyScraper = new RedditCompanyScraper();
+        ICompanyWriter companyWriter = new CompanyHibernateWriter();
+        ICompanyScraper companyScraper = new RedditCompanyScraper();
         companyWriter.save(companyScraper.fetch());
     }
 
     private static void scrapePositions() {
-        CompanyReader companyReader = new CompanyHibernateReader();
-        List<Company> companies = companyReader.getAll();
+        ICompanyReader companyReader = new CompanyHibernateReader();
+        scrapePositions(companyReader.getAll());
+    }
+
+    private static void scrapePositions(String nameString) {
+        ICompanyReader companyReader = new CompanyHibernateReader();
+        List<Company> companies = Arrays.stream(nameString.split(","))
+                .map(companyReader::getByName)
+                .filter((c) -> !c.isEmpty())
+                .map((c) -> c.get(0))
+                .collect(Collectors.toList());
         scrapePositions(companies);
     }
 
-    private static void scrapePositions(String name) {
-        CompanyReader companyReader = new CompanyHibernateReader();
-        List<Company> companies = companyReader.getByName(name);
-        if (companies.isEmpty()) {
-            logger.error(String.format("Unable to find a company by the name of %s.", name));
-        } else {
-            assert(companies.size() == 1);
-            scrapePositions(companies);
-        }
-    }
-
     private static void scrapePositions(List<Company> companies) {
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
-        List<Position> positions = new CopyOnWriteArrayList<>();
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(12);
         CountDownLatch latch = new CountDownLatch(companies.size());
-        try (InternWebDriverPool pool = new InternWebDriverPool(8)) {
+        try (InternWebDriverPool pool = new InternWebDriverPool(6)) {
             for (Company company : companies) {
-                InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
-                IPositionScraper positionScraper = new PositionScraper(
-                        linkStrategy,
-                        new PositionBFSStrategy(pool));
-                executor.execute(() -> {
-                    positionScraper.setup(company);
-                    executor.execute(() -> {
-                        positionScraper.fetch(company, (results) -> {
-                            positions.addAll(results);
-                            latch.countDown();
-                        });
-                    });
+                IPositionScraper scraper = new ScheduledPositionScraper(new GoogleInitialLinkStrategy(),
+                        new PositionBFSStrategy(pool), executor);
+                IPositionWriter writer = new PositionHibernateWriter();
+                scraper.scrape(company, (position) -> {
+                    if (position != null) {
+                        writer.save(position);
+                    }
+                    else {
+                        logger.info(String.format("%s finished. Waiting on %d remaining companies.",
+                                company.getName(), latch.getCount() - 1));
+                        latch.countDown();
+                    }
                 });
             }
         }
@@ -103,17 +103,15 @@ public class Main {
             logger.error("Count down latch failed.", e);
         }
         executor.shutdownNow();
-        PositionWriter writer = new PositionHibernateWriter();
-        writer.save(positions);
     }
 
     public static void main(String[] args) {
         initChromeDriver();
 
         Options options = new Options();
-        options.addOption("c", "companies", false, "scrape companies & populate companies table");
-        options.addOption("p", "positions", false, "scrape positions & populate positions table");
-        options.addOption("s", "specific", true, "scrape positions for a specified company");
+        options.addOption("c", "companies", false, "scrape all possible companies");
+        options.addOption("p", "positions", false, "scrape positions for all companies in the database");
+        options.addOption("s", "specific", true, "scrape positions for a comma-delimited list of companies");
         options.addOption("h", "help", false, "print help information");
 
         CommandLineParser parser = new DefaultParser();

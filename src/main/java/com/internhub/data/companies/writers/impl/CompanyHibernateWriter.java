@@ -1,6 +1,7 @@
 package com.internhub.data.companies.writers.impl;
 
-import com.internhub.data.companies.writers.CompanyWriter;
+import com.google.common.collect.Lists;
+import com.internhub.data.companies.writers.ICompanyWriter;
 import com.internhub.data.models.Company;
 import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
@@ -11,8 +12,13 @@ import org.hibernate.query.Query;
 
 import java.util.List;
 
-public class CompanyHibernateWriter implements CompanyWriter {
+public class CompanyHibernateWriter implements ICompanyWriter {
     private static SessionFactory factory = HibernateUtils.buildSession();
+
+    @Override
+    public void save(Company newCompany) {
+        save(Lists.newArrayList(newCompany));
+    }
 
     // For each company object:
     // If a company doesn't exist in the database with $NAME, add it
@@ -40,10 +46,11 @@ public class CompanyHibernateWriter implements CompanyWriter {
                 }
             }
             tx.commit();
-        } catch (HibernateException he) {
-            if (tx != null)
+        } catch (HibernateException ex) {
+            if (tx != null) {
                 tx.rollback();
-            he.printStackTrace();
+            }
+            ex.printStackTrace();
         }
     }
 }

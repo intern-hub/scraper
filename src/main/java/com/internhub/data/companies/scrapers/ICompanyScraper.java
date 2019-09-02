@@ -4,6 +4,6 @@ import com.internhub.data.models.Company;
 
 import java.util.List;
 
-public interface CompanyScraper {
+public interface ICompanyScraper {
     List<Company> fetch();
 }

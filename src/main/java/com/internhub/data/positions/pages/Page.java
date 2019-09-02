@@ -1,4 +1,4 @@
-package com.internhub.data.pages;
+package com.internhub.data.positions.pages;
 
 import com.google.common.collect.Lists;
 import com.internhub.data.util.ScraperUtils;

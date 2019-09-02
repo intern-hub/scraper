@@ -1,7 +1,8 @@
 package com.internhub.data.positions.writers.impl;
 
+import com.google.common.collect.Lists;
 import com.internhub.data.models.Position;
-import com.internhub.data.positions.writers.PositionWriter;
+import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.util.HibernateUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -11,12 +12,13 @@ import org.hibernate.Transaction;
 import java.util.List;
 import org.hibernate.query.Query;
 
-public class PositionHibernateWriter implements PositionWriter {
+public class PositionHibernateWriter implements IPositionWriter {
     private static SessionFactory factory = HibernateUtils.buildSession();
 
-    /**
-     * Given a list of positions, either inserts position into db or updates existing position entry
-     */
+    public void save(Position newPosition) {
+        save(Lists.newArrayList(newPosition));
+    }
+
     public void save(List<Position> newPositions) {
         Transaction tx = null;
         try (Session session = factory.openSession()) {
@@ -44,10 +46,11 @@ public class PositionHibernateWriter implements PositionWriter {
                 }
             }
             tx.commit();
-        } catch (HibernateException he) {
-            if (tx != null)
+        } catch (HibernateException ex) {
+            if (tx != null) {
                 tx.rollback();
-            he.printStackTrace();
+            }
+            ex.printStackTrace();
         }
     }
 }

@@ -1,11 +1,9 @@
 package com.internhub.data.positions.scrapers.strategies.impl;
 
-import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.pages.Page;
+import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
-import com.internhub.data.positions.scrapers.PositionCallback;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.InternWebDriverPool;
@@ -14,6 +12,7 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
@@ -26,8 +25,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
     }
 
     @Override
-    public void fetch(Company company, List<String> initialLinks, PositionCallback callback) {
-        List<Position> results = Lists.newArrayList();
+    public void producePositions(Company company, List<String> initialLinks, Consumer<Position> consumer) {
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>(initialLinks);
 
@@ -51,7 +49,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
                 logPosition(extraction.position, candidate.link);
 
                 if (extraction.position != null) {
-                    results.add(extraction.position);
+                    consumer.accept(extraction.position);
                 }
 
                 if (candidate.depth < MAX_DEPTH) {
@@ -72,7 +70,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             ++totalLinks;
         }
 
-        callback.run(results);
+        consumer.accept(null);
     }
 
     private Page getPage(String link) {
@@ -82,7 +80,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             driver.get(link);
             // Wait for the page to load any JavaScript (e.g Amazon's internships)
             try {
-                Thread.sleep(PAGE_LOAD_DELAY_MS);
+                Thread.sleep(JAVASCRIPT_LOAD_MILLISECONDS);
             } catch (InterruptedException e) {
                 logger.error("Could not wait for JavaScript to load.", e);
             }
