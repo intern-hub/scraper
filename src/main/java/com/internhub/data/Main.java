@@ -1,11 +1,9 @@
 package com.internhub.data;
 
-import com.google.common.collect.Lists;
 import com.internhub.data.companies.readers.ICompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.ICompanyWriter;
-import com.internhub.data.models.Position;
 import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
@@ -13,7 +11,6 @@ import com.internhub.data.models.Company;
 import com.internhub.data.companies.scrapers.ICompanyScraper;
 import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 
-import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
@@ -24,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
