@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -40,38 +39,37 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         PriorityQueue<Candidate> candidates = new PriorityQueue<>(new CandidateComparator());
         Set<String> visited = new HashSet<>();
 
-        final AtomicInteger totalLinks = new AtomicInteger(0);
         candidates.addAll(initialLinks.stream()
                 .map((link) -> new Candidate(link, 1))
                 .collect(Collectors.toList()));
 
-        mService.execute(() -> process(company, candidates, totalLinks, visited, consumer));
+        mService.execute(() -> nextCandidate(company, candidates, 1, visited, consumer));
     }
 
-    private void process(Company company, PriorityQueue<Candidate> candidates,
-                         final AtomicInteger totalLinks, Set<String> visited,
-                         Consumer<Position> consumer) {
-        if (!candidates.isEmpty() && totalLinks.get() < MAX_TOTAL_LINKS) {
+    private void nextCandidate(Company company, PriorityQueue<Candidate> candidates,
+                               final int totalLinks, Set<String> visited,
+                               Consumer<Position> consumer) {
+        if (!candidates.isEmpty() && totalLinks <= MAX_TOTAL_LINKS) {
             Candidate candidate = candidates.poll();
             if (visited.contains(candidate.link)) {
                 return;
             }
             visited.add(candidate.link);
             logger.info(String.format(
-                    "[%d/%d] Visiting %s (depth = %d) ...",
-                    totalLinks.getAndIncrement(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+                    "[%d/%d] Candidate is %s. (depth = %d)",
+                    totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             try {
                 processCandidate(company, candidate, candidates, visited, consumer);
             } catch (TimeoutException e) {
-                logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
-                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+                logger.error(String.format("[%d/%d] Timed out on %s. (depth = %d)",
+                        totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             } catch (Exception e) {
                 logger.error(String.format(
-                        "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
-                        totalLinks.get(), MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
+                        "[%d/%d] Swallowed error on %s. (depth = %d)",
+                        totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             } finally {
                 mService.schedule(
-                        () -> process(company, candidates, totalLinks, visited, consumer),
+                        () -> nextCandidate(company, candidates, totalLinks + 1, visited, consumer),
                         JAVASCRIPT_LOAD_MILLISECONDS, TimeUnit.MILLISECONDS);
             }
         } else {
@@ -85,8 +83,6 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         Page page = getPage(candidate.link);
         PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
 
-        logPosition(extraction.position, candidate.link);
-
         if (extraction.position != null) {
             consumer.accept(extraction.position);
         }
@@ -96,18 +92,6 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
                     .filter((link) -> !visited.contains(link))
                     .map((link) -> new Candidate(link, candidate.depth + 1))
                     .collect(Collectors.toList()));
-        }
-    }
-
-    private void logPosition(Position position, String link) {
-        if (position != null) {
-            logger.info(String.format("Identified valid position at %s.", link));
-            logger.info(String.format("Title is %s.", position.getTitle()));
-            logger.info(String.format("Season & year is %s %d.", position.getSeason(), position.getYear()));
-            logger.info(String.format("Location is %s.", position.getLocation()));
-            logger.info(String.format("Minimum degree is %s.", position.getDegree()));
-        } else {
-            logger.info(String.format("Unable to find position at %s.", link));
         }
     }
 

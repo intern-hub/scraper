@@ -83,6 +83,6 @@ public class Company {
     }
 
     public String toString() {
-        return name;
+        return String.format("Company{name=%s;website=%s}", name, website);
     }
 }

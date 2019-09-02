@@ -4,6 +4,7 @@ import com.internhub.data.companies.readers.ICompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.ICompanyWriter;
+import com.internhub.data.companies.writers.impl.CompanyStreamWriter;
 import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
@@ -14,13 +15,13 @@ import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
+import com.internhub.data.positions.writers.impl.PositionStreamWriter;
 import com.internhub.data.selenium.InternWebDriverPool;
+import com.internhub.data.util.SeleniumUtils;
 import org.apache.commons.cli.*;
-import org.apache.commons.exec.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
@@ -29,58 +30,37 @@ import java.util.stream.Collectors;
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    static void initChromeDriver() {
-        // Determine which Chrome driver file to use
-        String driverName;
-        if (OS.isFamilyWindows()) {
-            driverName = "chromedriver.exe";
-        } else if (OS.isFamilyMac()) {
-            driverName = "chromedriver_macos";
-        } else if (OS.isFamilyUnix()) {
-            driverName = "chromedriver_linux";
-        } else {
-            throw new RuntimeException("Unsupported OS detected.");
-        }
-
-        // Convert the driver file name to a path in our resources folder
-        URL driver = Main.class.getClassLoader().getResource(driverName);
-        if (driver == null) {
-            throw new RuntimeException("Unable to find path to " + driverName + ".");
-        }
-
-        // Set the system property to tell Selenium which driver to use
-        System.setProperty("webdriver.chrome.driver", driver.getPath());
-    }
-
-    private static void scrapeCompanies() {
-        ICompanyWriter companyWriter = new CompanyHibernateWriter();
+    private static void scrapeCompanies(boolean dryRun) {
         ICompanyScraper companyScraper = new RedditCompanyScraper();
+        ICompanyWriter companyWriter = dryRun ?
+                new CompanyStreamWriter(System.out) : new CompanyHibernateWriter();
         companyWriter.save(companyScraper.fetch());
     }
 
-    private static void scrapePositions() {
+    private static void scrapePositions(boolean dryRun) {
         ICompanyReader companyReader = new CompanyHibernateReader();
-        scrapePositions(companyReader.getAll());
+        scrapePositions(companyReader.getAll(), dryRun);
     }
 
-    private static void scrapePositions(String nameString) {
+    private static void scrapePositions(String names, boolean dryRun) {
         ICompanyReader companyReader = new CompanyHibernateReader();
-        List<Company> companies = Arrays.stream(nameString.split(","))
+        List<Company> companies = Arrays.stream(names.split(","))
                 .map(companyReader::getByName)
                 .filter((c) -> !c.isEmpty())
                 .map((c) -> c.get(0))
                 .collect(Collectors.toList());
-        scrapePositions(companies);
+        scrapePositions(companies, dryRun);
     }
 
-    private static void scrapePositions(List<Company> companies) {
+    private static void scrapePositions(List<Company> companies, boolean dryRun) {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(12);
-        CountDownLatch latch = new CountDownLatch(companies.size());
+        IPositionWriter writer = dryRun ?
+                new PositionStreamWriter(System.out) : new PositionHibernateWriter();
         try (InternWebDriverPool pool = new InternWebDriverPool(6)) {
+            CountDownLatch latch = new CountDownLatch(companies.size());
             for (Company company : companies) {
                 IPositionScraper scraper = new ScheduledPositionScraper(new GoogleInitialLinkStrategy(),
                         new PositionBFSStrategy(pool), executor);
-                IPositionWriter writer = new PositionHibernateWriter();
                 scraper.scrape(company, (position) -> {
                     if (position != null) {
                         writer.save(position);
@@ -92,22 +72,23 @@ public class Main {
                     }
                 });
             }
-        }
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            logger.error("Count down latch failed.", e);
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                logger.error("Count down latch failed.", e);
+            }
         }
         executor.shutdownNow();
     }
 
     public static void main(String[] args) {
-        initChromeDriver();
+        SeleniumUtils.initChromeDriver();
 
         Options options = new Options();
         options.addOption("c", "companies", false, "scrape all possible companies");
         options.addOption("p", "positions", false, "scrape positions for all companies in the database");
         options.addOption("s", "specific", true, "scrape positions for a comma-delimited list of companies");
+        options.addOption("d", "dry-run", false, "print but do not save any scraped positions or companies");
         options.addOption("h", "help", false, "print help information");
 
         CommandLineParser parser = new DefaultParser();
@@ -119,14 +100,16 @@ public class Main {
                 formatter.printHelp("gradle run --args=", options, true);
                 return;
             }
+
+            boolean dryRun = options.hasOption("d");
             if (line.hasOption("c")) {
-                scrapeCompanies();
+                scrapeCompanies(dryRun);
             }
             if (line.hasOption("p")) {
-                scrapePositions();
+                scrapePositions(dryRun);
             }
             if (line.hasOption("s")) {
-                scrapePositions(line.getOptionValue("s"));
+                scrapePositions(line.getOptionValue("s"), dryRun);
             }
         } catch (ParseException exp) {
             throw new RuntimeException(exp);

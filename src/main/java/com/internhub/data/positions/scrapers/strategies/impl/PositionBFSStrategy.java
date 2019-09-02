@@ -40,13 +40,11 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             visited.add(candidate.link);
 
             logger.info(String.format(
-                    "[%d/%d] Visiting %s (depth = %d) ...",
+                    "[%d/%d] Candidate is %s. (depth = %d)",
                     totalLinks + 1, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             try {
                 Page page = getPage(candidate.link);
                 PositionExtractor.ExtractionResult extraction = mPositionExtractor.extract(page, company);
-
-                logPosition(extraction.position, candidate.link);
 
                 if (extraction.position != null) {
                     consumer.accept(extraction.position);
@@ -59,11 +57,11 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
                             .collect(Collectors.toList()));
                 }
             } catch (TimeoutException e) {
-                logger.error(String.format("[%d/%d] Encountered timeout exception on %s. (depth = %d)",
+                logger.error(String.format("[%d/%d] Timed out on %s. (depth = %d)",
                         totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
             } catch (Exception e) {
                 logger.error(String.format(
-                        "[%d/%d] Unknown error encountered on %s, swallowed exception. (depth = %d)",
+                        "[%d/%d] Swallowed error on %s. (depth = %d)",
                         totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
             }
 
@@ -91,64 +89,5 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             logger.error("Could not acquire web driver.", e);
             return null;
         }
-    }
-
-    private void logPosition(Position position, String link) {
-        if (position != null) {
-            logger.info(String.format("Identified valid position at %s.", link));
-            logger.info(String.format("Title is %s.", position.getTitle()));
-            logger.info(String.format("Season & year is %s %d.", position.getSeason(), position.getYear()));
-            logger.info(String.format("Location is %s.", position.getLocation()));
-            logger.info(String.format("Minimum degree is %s.", position.getDegree()));
-        } else {
-            logger.info(String.format("Unable to find position at %s.", link));
-        }
-    }
-}
-
-class Candidate {
-    final String link;
-    final int depth;
-
-    Candidate(String link, int depth) {
-        this.link = link;
-        this.depth = depth;
-    }
-}
-
-class CandidateComparator implements Comparator<Candidate> {
-    private static final Map<String, Integer> TAGS;
-
-    static {
-        TAGS = new HashMap<>();
-        TAGS.put("intern", 40);
-        TAGS.put("career", 12);
-        TAGS.put("job", 8);
-        TAGS.put("student", 2);
-        TAGS.put("university", 2);
-        TAGS.put("software", 1);
-        TAGS.put("hardware", 1);
-        TAGS.put("engineer", 1);
-        TAGS.put("greenhouse", 1);
-        TAGS.put("workday", 1);
-        TAGS.put("taleo", 1);
-        TAGS.put("jobvite", 1);
-        TAGS.put("icims", 1);
-    }
-
-    @Override
-    public int compare(Candidate c1, Candidate c2) {
-        return heuristic(c2) - heuristic(c1);
-    }
-
-    private int heuristic(Candidate candidate) {
-        int score = 0;
-        String llink = candidate.link.toLowerCase();
-        for (Map.Entry<String, Integer> entry : TAGS.entrySet()) {
-            if (llink.contains(entry.getKey())) {
-                score += entry.getValue();
-            }
-        }
-        return score;
     }
 }
