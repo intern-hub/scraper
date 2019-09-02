@@ -40,7 +40,7 @@ public class Main {
         if (OS.isFamilyWindows()) {
             driverName = "chromedriver.exe";
         } else if (OS.isFamilyMac()) {
-            driverName = "chromedriver";
+            driverName = "chromedriver_macos";
         } else if (OS.isFamilyUnix()) {
             driverName = "chromedriver_linux";
         } else {
