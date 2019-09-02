@@ -22,11 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * @deprecated
  * Although this strategy is faster than its single-threaded counterpart,
  * it does not pause at the correct time.
  */
-@Deprecated
 public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositionBFSScraperStrategy {
     private final InternWebDriverPool mDriverPool;
     private final PositionExtractor mPositionExtractor;

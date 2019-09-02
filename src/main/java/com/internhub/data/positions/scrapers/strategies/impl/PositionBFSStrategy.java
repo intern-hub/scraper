@@ -84,7 +84,7 @@ public class PositionBFSStrategy implements IPositionScraperStrategy, IPositionB
             try {
                 Thread.sleep(PAGE_LOAD_DELAY_MS);
             } catch (InterruptedException e) {
-                logger.error("Could not wait for page to load.", e);
+                logger.error("Could not wait for JavaScript to load.", e);
             }
             Page page = new Page(driver.getPageSource(), link);
             page.process(driver);

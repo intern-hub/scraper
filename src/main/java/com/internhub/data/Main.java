@@ -62,33 +62,7 @@ public class Main {
     private static void scrapePositions() {
         CompanyReader companyReader = new CompanyHibernateReader();
         List<Company> companies = companyReader.getAll();
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
-        List<Position> positions = new CopyOnWriteArrayList<>();
-        CountDownLatch latch = new CountDownLatch(companies.size());
-        try (InternWebDriverPool pool = new InternWebDriverPool(8)) {
-            for (Company company : companies) {
-                InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
-                IPositionScraper positionScraper = new PositionScraper(
-                        linkStrategy,
-                        new PositionBFSStrategy(pool));
-                executor.execute(() -> {
-                    positionScraper.setup(company);
-                    executor.execute(() -> {
-                        positionScraper.fetch(company, (intermediate) -> {
-                            positions.addAll(intermediate);
-                            latch.countDown();
-                        });
-                    });
-                });
-            }
-        }
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            logger.error("Count down latch failed.", e);
-        }
-        PositionWriter writer = new PositionHibernateWriter();
-        writer.save(positions);
+        scrapePositions(companies);
     }
 
     private static void scrapePositions(String name) {
@@ -103,15 +77,32 @@ public class Main {
     }
 
     private static void scrapePositions(List<Company> companies) {
-        List<Position> positions = new ArrayList<>();
-        try (InternWebDriverPool pool = new InternWebDriverPool()) {
-            IPositionScraper positionScraper = new PositionScraper(
-                    new GoogleInitialLinkStrategy(),
-                    new PositionBFSStrategy(pool));
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(24);
+        List<Position> positions = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(companies.size());
+        try (InternWebDriverPool pool = new InternWebDriverPool(8)) {
             for (Company company : companies) {
-                positionScraper.fetch(company, positions::addAll);
+                InitialLinkStrategy linkStrategy = new GoogleInitialLinkStrategy();
+                IPositionScraper positionScraper = new PositionScraper(
+                        linkStrategy,
+                        new PositionBFSStrategy(pool));
+                executor.execute(() -> {
+                    positionScraper.setup(company);
+                    executor.execute(() -> {
+                        positionScraper.fetch(company, (results) -> {
+                            positions.addAll(results);
+                            latch.countDown();
+                        });
+                    });
+                });
             }
         }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.error("Count down latch failed.", e);
+        }
+        executor.shutdownNow();
         PositionWriter writer = new PositionHibernateWriter();
         writer.save(positions);
     }
