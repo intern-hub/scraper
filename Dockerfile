@@ -9,8 +9,8 @@ ENV GRADLE_HOME=/opt/gradle
 
 # Download gradle and chromedriver binaries 
 WORKDIR /tmp
-RUN wget https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
-RUN wget https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
+RUN wget -nv https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
+RUN wget -nv https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_linux64.zip
 
 # Unzip gradle binary
 RUN mkdir ${GRADLE_HOME} 
@@ -20,10 +20,8 @@ ENV PATH=${PATH}:${GRADLE_HOME}/gradle-${GRADLE_VERSION}/bin
 # Copy repository contents into application folder
 WORKDIR /app
 COPY src /app/src
-COPY build.gradle /app/build.gradle
-COPY settings.gradle /app/settings.gradle
-COPY gradlew /app/gradlew
-COPY gradlew.bat /app/gradlew.bat
+ADD *.gradle /app/
+ADD gradlew* /app/
 
 # Replace chromedriver binary with downloaded version
 RUN unzip -d src/main/resources /tmp/chromedriver_linux64.zip 
