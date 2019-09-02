@@ -12,10 +12,11 @@ Make sure the following dependencies have been installed on your system.
 
 * Docker
 
-You will also need to acquire a valid **hibernate.cfg.xml** file and place it
-in the **src/main/resources** folder. This file is responsible for
+You will also need to place a valid **hibernate.cfg.xml** file in 
+the **src/main/resources** folder. This file is responsible for
 providing SQL database connection details, enabling the scraper to
-read and write companies/positions.
+read and write companies/positions. 
+Please see _src/main/resources/hibernate.cfg.xml.example_ for an example.
 
 ## Usage
 
