@@ -88,7 +88,7 @@ public class Main {
         SeleniumUtils.initChromeDriver();
 
         // This fixes an issue with Java running in Docker. For some reason,
-        // the JVM is not breaking down splitting arguments passed in.
+        // the JVM is not splitting CLI arguments by space.
         if (args.length == 1) {
             args = Commandline.translateCommandline(args[0]);
         }
