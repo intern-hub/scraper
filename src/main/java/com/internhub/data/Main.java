@@ -18,6 +18,7 @@ import com.internhub.data.positions.writers.impl.PositionStreamWriter;
 import com.internhub.data.selenium.InternWebDriverPool;
 import com.internhub.data.util.SeleniumUtils;
 import org.apache.commons.cli.*;
+import org.apache.tools.ant.types.Commandline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public class Main {
     private static void scrapePositions(String names, boolean dryRun) {
         ICompanyReader companyReader = new CompanyHibernateReader();
         List<Company> companies = Arrays.stream(names.split(","))
+                .map(String::trim)
                 .map(companyReader::getByName)
                 .filter((c) -> !c.isEmpty())
                 .map((c) -> c.get(0))
@@ -84,6 +86,12 @@ public class Main {
 
     public static void main(String[] args) {
         SeleniumUtils.initChromeDriver();
+
+        // This fixes an issue with Java running in Docker. For some reason,
+        // the JVM is not breaking down splitting arguments passed in.
+        if (args.length == 1) {
+            args = Commandline.translateCommandline(args[0]);
+        }
 
         Options options = new Options();
         options.addOption("c", "companies", false, "scrape all possible companies");
