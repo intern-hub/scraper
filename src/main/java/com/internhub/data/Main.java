@@ -101,7 +101,7 @@ public class Main {
                 return;
             }
 
-            boolean dryRun = options.hasOption("d");
+            boolean dryRun = line.hasOption("d");
             if (line.hasOption("c")) {
                 scrapeCompanies(dryRun);
             }
