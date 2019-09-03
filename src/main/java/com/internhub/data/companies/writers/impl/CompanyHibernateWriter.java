@@ -34,15 +34,16 @@ public class CompanyHibernateWriter implements ICompanyWriter {
                 query.setParameter("name", newCompany.getName());
                 List<Company> existing = query.list();
                 if (existing.isEmpty()) {
-                    // New company is now persistent
                     session.save(newCompany);
+                    logger.info(String.format("Saved new company as %s.",
+                            newCompany.toString()));
                 } else {
-                    // New company is still left transient,
-                    // so we replace it with the old, persistent company object
                     Company oldCompany = existing.get(0);
                     oldCompany.setWebsite(newCompany.getWebsite());
                     session.update(oldCompany);
                     newCompanies.set(i, oldCompany);
+                    logger.info(String.format("Updated existing company to %s.",
+                            oldCompany.toString()));
                 }
             }
             tx.commit();

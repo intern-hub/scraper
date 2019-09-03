@@ -2,8 +2,8 @@ package com.internhub.data.positions.scrapers.strategies.impl;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.InternWebDriverPool;
@@ -11,7 +11,10 @@ import com.internhub.data.selenium.InternWebDriverPoolConnection;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 

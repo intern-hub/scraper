@@ -8,9 +8,9 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 import java.util.List;
-import org.hibernate.query.Query;
 
 public class PositionHibernateWriter implements IPositionWriter {
     private static SessionFactory factory = HibernateUtils.buildSession();
@@ -29,11 +29,10 @@ public class PositionHibernateWriter implements IPositionWriter {
                 query.setParameter("link", newPosition.getLink());
                 List<Position> existing = query.list();
                 if (existing.isEmpty()) {
-                    // New position is persistent
                     session.save(newPosition);
+                    logger.info(String.format("Saved new position as %s.",
+                            newPosition.toString()));
                 } else {
-                    // New position is still left transient,
-                    // so we replace it with the old, persistent position object
                     Position oldPosition = existing.get(0);
                     oldPosition.setCompany(newPosition.getCompany());
                     oldPosition.setTitle(newPosition.getTitle());
@@ -43,6 +42,8 @@ public class PositionHibernateWriter implements IPositionWriter {
                     oldPosition.setLocation(newPosition.getLocation());
                     session.update(oldPosition);
                     newPositions.set(i, oldPosition);
+                    logger.info(String.format("Updated existing position to %s.",
+                            oldPosition.toString()));
                 }
             }
             tx.commit();

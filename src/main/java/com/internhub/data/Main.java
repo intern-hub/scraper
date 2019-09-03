@@ -2,16 +2,15 @@ package com.internhub.data;
 
 import com.internhub.data.companies.readers.ICompanyReader;
 import com.internhub.data.companies.readers.impl.CompanyHibernateReader;
-import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
-import com.internhub.data.companies.writers.ICompanyWriter;
-import com.internhub.data.companies.writers.impl.CompanyStreamWriter;
-import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
-import com.internhub.data.positions.scrapers.IPositionScraper;
-import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
-import com.internhub.data.models.Company;
 import com.internhub.data.companies.scrapers.ICompanyScraper;
 import com.internhub.data.companies.scrapers.impl.RedditCompanyScraper;
-
+import com.internhub.data.companies.writers.ICompanyWriter;
+import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
+import com.internhub.data.companies.writers.impl.CompanyStreamWriter;
+import com.internhub.data.models.Company;
+import com.internhub.data.positions.scrapers.IPositionScraper;
+import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
+import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
@@ -24,7 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 public class Main {

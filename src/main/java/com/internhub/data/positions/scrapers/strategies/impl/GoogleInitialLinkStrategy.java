@@ -7,7 +7,7 @@ import com.internhub.data.search.GoogleSearch;
 import com.internhub.data.util.ScraperUtils;
 
 import java.net.URL;
-import java.util.*;
+import java.util.List;
 
 public class GoogleInitialLinkStrategy implements IInitialLinkStrategy {
     private static final String INTERNSHIP_SEARCH_TERM = "%s internship apply";

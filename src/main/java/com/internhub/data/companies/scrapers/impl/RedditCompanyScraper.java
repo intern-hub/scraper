@@ -1,8 +1,8 @@
 package com.internhub.data.companies.scrapers.impl;
 
 import com.internhub.data.companies.scrapers.ICompanyScraper;
-import com.internhub.data.models.Company;
 import com.internhub.data.companies.verifiers.CompanyVerifier;
+import com.internhub.data.models.Company;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.NetworkAdapter;
 import net.dean.jraw.http.OkHttpNetworkAdapter;

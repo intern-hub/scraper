@@ -2,8 +2,8 @@ package com.internhub.data.positions.scrapers.strategies.impl;
 
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.extractors.PositionExtractor;
+import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.scrapers.strategies.IPositionBFSScraperStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 import com.internhub.data.selenium.InternWebDriverPool;
@@ -15,7 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -52,25 +53,27 @@ public class PositionBFSMTStrategy implements IPositionScraperStrategy, IPositio
         if (!candidates.isEmpty() && totalLinks <= MAX_TOTAL_LINKS) {
             Candidate candidate = candidates.poll();
             if (visited.contains(candidate.link)) {
-                return;
+                mService.execute(() -> nextCandidate(company, candidates, totalLinks, visited, consumer));
             }
-            visited.add(candidate.link);
-            logger.info(String.format(
-                    "[%d/%d] Candidate is %s. (depth = %d)",
-                    totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
-            try {
-                processCandidate(company, candidate, candidates, visited, consumer);
-            } catch (TimeoutException e) {
-                logger.error(String.format("[%d/%d] Timed out on %s. (depth = %d)",
+            else {
+                visited.add(candidate.link);
+                logger.info(String.format(
+                        "[%d/%d] Candidate is %s. (depth = %d)",
                         totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
-            } catch (Exception e) {
-                logger.error(String.format(
-                        "[%d/%d] Swallowed error on %s. (depth = %d)",
-                        totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
-            } finally {
-                mService.schedule(
-                        () -> nextCandidate(company, candidates, totalLinks + 1, visited, consumer),
-                        JAVASCRIPT_LOAD_MILLISECONDS, TimeUnit.MILLISECONDS);
+                try {
+                    processCandidate(company, candidate, candidates, visited, consumer);
+                } catch (TimeoutException e) {
+                    logger.error(String.format("[%d/%d] Timed out on %s. (depth = %d)",
+                            totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth));
+                } catch (Exception e) {
+                    logger.error(String.format(
+                            "[%d/%d] Swallowed error on %s. (depth = %d)",
+                            totalLinks, MAX_TOTAL_LINKS, candidate.link, candidate.depth), e);
+                } finally {
+                    mService.schedule(
+                            () -> nextCandidate(company, candidates, totalLinks + 1, visited, consumer),
+                            JAVASCRIPT_LOAD_MILLISECONDS, TimeUnit.MILLISECONDS);
+                }
             }
         } else {
             consumer.accept(null);
