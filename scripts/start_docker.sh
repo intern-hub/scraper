@@ -1,4 +1,5 @@
 #!/bin/bash
 
 scripts/build_docker.sh
-docker run internhub/scraper "--args=\"$@\""
+cmd="--args=\"$@\""
+docker run internhub/scraper "$cmd"
