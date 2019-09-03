@@ -2,4 +2,5 @@
 
 scripts/build_docker.sh
 cmd="--args=\"$@\""
-docker run internhub/scraper "$cmd"
+logs="$(pwd)/logs"
+docker run -v "$logs":/app/logs internhub/scraper "$cmd"
