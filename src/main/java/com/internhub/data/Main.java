@@ -11,6 +11,7 @@ import com.internhub.data.models.Company;
 import com.internhub.data.positions.scrapers.IPositionScraper;
 import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
+import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;

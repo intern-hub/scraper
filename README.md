@@ -3,7 +3,7 @@
 This repository contains our scraping code.
 The scraper pulls companies from [/r/cscareerquestions](https://reddit.com/r/cscareerquestions)
 and crawls the web for positions relating to those companies.
-We are also actively looking for other reliable sources
+We are actively looking for other reliable sources
 of company names.
 
 ## Installation
@@ -34,3 +34,7 @@ and then save them to the database, ignoring duplicates, use:
 ```
 scripts/start_docker.sh -p
 ```
+
+You can provide the `-d` flag to do a dry-run, which provides read-only access to the
+scraper database. All positions or companies found will be printed to stdout, rather
+than saved into the database.
