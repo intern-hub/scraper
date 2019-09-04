@@ -6,17 +6,17 @@ import com.internhub.data.positions.scrapers.strategies.IInitialLinkStrategy;
 import com.internhub.data.positions.scrapers.strategies.IPositionScraperStrategy;
 
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
-public class ScheduledPositionScraper implements IPositionScraper {
+public class ExecutablePositionScraper implements IPositionScraper {
     private IInitialLinkStrategy mInitialStrategy;
     private IPositionScraperStrategy mScraperStrategy;
-    private ScheduledExecutorService mService;
+    private ExecutorService mService;
 
-    public ScheduledPositionScraper(IInitialLinkStrategy initialStrategy,
-                                    IPositionScraperStrategy scraperStrategy,
-                                    ScheduledExecutorService service) {
+    public ExecutablePositionScraper(IInitialLinkStrategy initialStrategy,
+                                     IPositionScraperStrategy scraperStrategy,
+                                     ExecutorService service) {
         mInitialStrategy = initialStrategy;
         mScraperStrategy = scraperStrategy;
         mService = service;

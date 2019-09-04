@@ -8,10 +8,9 @@ import com.internhub.data.companies.writers.ICompanyWriter;
 import com.internhub.data.companies.writers.impl.CompanyHibernateWriter;
 import com.internhub.data.companies.writers.impl.CompanyStreamWriter;
 import com.internhub.data.models.Company;
+import com.internhub.data.positions.scrapers.ExecutablePositionScraper;
 import com.internhub.data.positions.scrapers.IPositionScraper;
-import com.internhub.data.positions.scrapers.ScheduledPositionScraper;
 import com.internhub.data.positions.scrapers.strategies.impl.GoogleInitialLinkStrategy;
-import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSMTStrategy;
 import com.internhub.data.positions.scrapers.strategies.impl.PositionBFSStrategy;
 import com.internhub.data.positions.writers.IPositionWriter;
 import com.internhub.data.positions.writers.impl.PositionHibernateWriter;
@@ -63,7 +62,7 @@ public class Main {
         try (InternWebDriverPool pool = new InternWebDriverPool(6)) {
             CountDownLatch latch = new CountDownLatch(companies.size());
             for (Company company : companies) {
-                IPositionScraper scraper = new ScheduledPositionScraper(new GoogleInitialLinkStrategy(),
+                IPositionScraper scraper = new ExecutablePositionScraper(new GoogleInitialLinkStrategy(),
                         new PositionBFSStrategy(pool), executor);
                 scraper.scrape(company, (position) -> {
                     if (position != null) {
