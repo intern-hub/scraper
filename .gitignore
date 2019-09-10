@@ -4,11 +4,12 @@
 .settings
 /bin/
 
-# Compiled class file
+# Compiled class files
 *.class
 
-# Log file
-*.log
+# Log files
+*.log*
+/logs/
 
 # BlueJ files
 *.ctxt

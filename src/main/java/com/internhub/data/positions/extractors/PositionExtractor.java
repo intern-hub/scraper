@@ -4,7 +4,7 @@ package com.internhub.data.positions.extractors;
 import com.google.common.collect.Lists;
 import com.internhub.data.models.Company;
 import com.internhub.data.models.Position;
-import com.internhub.data.pages.Page;
+import com.internhub.data.positions.pages.Page;
 import com.internhub.data.positions.verifiers.PositionVerifier;
 import com.internhub.data.util.ScraperUtils;
 import org.jsoup.nodes.Element;
